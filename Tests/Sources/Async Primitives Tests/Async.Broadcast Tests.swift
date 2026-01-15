@@ -12,11 +12,11 @@
 import Async_Primitives
 import Testing
 
-@Suite("Async.Broadcast")
+@Suite
 struct BroadcastTests {
 
-    @Test("Single subscriber receives all elements")
-    func singleSubscriberReceivesAll() async throws {
+    @Test
+    func `Single subscriber receives all elements`() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
 
@@ -33,8 +33,8 @@ struct BroadcastTests {
         #expect(received == [1, 2, 3])
     }
 
-    @Test("Multiple subscribers each receive all elements")
-    func multipleSubscribersReceiveAll() async throws {
+    @Test
+    func `Multiple subscribers each receive all elements`() async throws {
         let broadcast = Async.Broadcast<Int>()
         let sub1 = broadcast.subscribe()
         let sub2 = broadcast.subscribe()
@@ -66,8 +66,8 @@ struct BroadcastTests {
         #expect(result2 == [1, 2])
     }
 
-    @Test("Late subscriber only sees new elements")
-    func lateSubscriberOnlySeesNew() async throws {
+    @Test
+    func `Late subscriber only sees new elements`() async throws {
         let broadcast = Async.Broadcast<Int>()
 
         broadcast.send(1)
@@ -86,16 +86,16 @@ struct BroadcastTests {
         #expect(received == [2, 3])
     }
 
-    @Test("isFinished reflects state")
-    func isFinishedReflectsState() {
+    @Test
+    func `isFinished reflects state`() {
         let broadcast = Async.Broadcast<Int>()
         #expect(broadcast.isFinished == false)
         broadcast.finish()
         #expect(broadcast.isFinished == true)
     }
 
-    @Test("Subscriber suspends until element available")
-    func subscriberSuspendsUntilElement() async throws {
+    @Test
+    func `Subscriber suspends until element available`() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
         let started = Async.Barrier(parties: 2)
@@ -118,8 +118,8 @@ struct BroadcastTests {
         #expect(result == 42)
     }
 
-    @Test("Subscriber resumes with nil on finish")
-    func subscriberResumesOnFinish() async throws {
+    @Test
+    func `Subscriber resumes with nil on finish`() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
         let started = Async.Barrier(parties: 2)
@@ -142,8 +142,8 @@ struct BroadcastTests {
         #expect(result == nil)
     }
 
-    @Test("Cancel subscription stops iteration")
-    func cancelSubscriptionStopsIteration() async throws {
+    @Test
+    func `Cancel subscription stops iteration`() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
         let started = Async.Barrier(parties: 2)
@@ -166,8 +166,8 @@ struct BroadcastTests {
         #expect(result == nil)
     }
 
-    @Test("Elements delivered in order")
-    func elementsDeliveredInOrder() async throws {
+    @Test
+    func `Elements delivered in order`() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
 
@@ -184,8 +184,8 @@ struct BroadcastTests {
         #expect(received == Array(1...100))
     }
 
-    @Test("Send after finish is ignored")
-    func sendAfterFinishIgnored() async throws {
+    @Test
+    func `Send after finish is ignored`() async throws {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
 
@@ -201,8 +201,8 @@ struct BroadcastTests {
         #expect(received == [1])
     }
 
-    @Test("Task cancellation throws cancelled error")
-    func taskCancellationThrowsCancelled() async {
+    @Test
+    func `Task cancellation throws cancelled error`() async {
         let broadcast = Async.Broadcast<Int>()
         let subscription = broadcast.subscribe()
         let started = Async.Barrier(parties: 2)
@@ -233,7 +233,7 @@ struct BroadcastTests {
 
 // MARK: - Stress Tests
 
-@Suite("Async.Broadcast.Stress")
+@Suite
 struct BroadcastStressTests {
 
     /// Yield multiple times to allow concurrent tasks to make progress.
@@ -243,8 +243,8 @@ struct BroadcastStressTests {
         }
     }
 
-    @Test("All subscribers receive all elements - no loss")
-    func allSubscribersReceiveAllElements() async throws {
+    @Test
+    func `All subscribers receive all elements - no loss`() async throws {
         // Multiple subscribers, all should receive every element.
         // This tests the core broadcast invariant.
         for round in 0..<20 {
@@ -291,8 +291,8 @@ struct BroadcastStressTests {
         }
     }
 
-    @Test("Cancellation racing with send - token matching correctness")
-    func cancellationRacingWithSend() async throws {
+    @Test
+    func `Cancellation racing with send - token matching correctness`() async throws {
         // Force cancelled subscribers to be in "waiting state" when cancelled.
         // Non-cancelled subscribers must still receive all elements.
         for round in 0..<30 {
@@ -368,8 +368,8 @@ struct BroadcastStressTests {
         }
     }
 
-    @Test("Finish racing with pending subscribers - all resume with nil")
-    func finishRacingWithPendingSubscribers() async throws {
+    @Test
+    func `Finish racing with pending subscribers - all resume with nil`() async throws {
         // Subscribers created after sends, then finish() called.
         // All must resume with empty results (no hang).
         for round in 0..<30 {
@@ -414,8 +414,8 @@ struct BroadcastStressTests {
         }
     }
 
-    @Test("Many subscribers with interleaved send and cancel")
-    func manySubscribersInterleavedSendCancel() async throws {
+    @Test
+    func `Many subscribers with interleaved send and cancel`() async throws {
         // Pure integrity stress test under concurrent send, subscribe, and cancel.
         //
         // INVARIANTS validated (must hold regardless of scheduling):
@@ -530,8 +530,8 @@ struct BroadcastStressTests {
             "Expected \(subscriberCount) subscribers to terminate, got \(completedSubscribers)")
     }
 
-    @Test("Buffer trimming with slow subscriber")
-    func bufferTrimmingWithSlowSubscriber() async throws {
+    @Test
+    func `Buffer trimming with slow subscriber`() async throws {
         // One slow subscriber, one fast subscriber.
         // Fast subscriber should not be blocked and gets all elements.
         // Slow subscriber may miss elements if it falls too far behind.
@@ -598,8 +598,8 @@ struct BroadcastStressTests {
         }
     }
 
-    @Test("Sequential next usage is correct")
-    func sequentialNextUsageIsCorrect() async throws {
+    @Test
+    func `Sequential next usage is correct`() async throws {
         // Demonstrates correct sequential iteration pattern.
         // (Note: Concurrent next() on same subscription is a precondition violation)
         let broadcast = Async.Broadcast<Int>()

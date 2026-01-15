@@ -12,11 +12,11 @@
 import Async_Primitives
 import Testing
 
-@Suite("Async")
+@Suite
 struct AsyncTests {
 
-    @Test("Async namespace exists")
-    func namespaceExists() {
+    @Test
+    func `Async namespace exists`() {
         _ = Async.self
         _ = Async.Channel<Never>.self
     }

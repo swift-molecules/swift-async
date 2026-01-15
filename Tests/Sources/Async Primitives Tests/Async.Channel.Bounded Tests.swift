@@ -12,11 +12,11 @@
 import Async_Primitives
 import Testing
 
-@Suite("Async.Channel.Bounded")
+@Suite
 struct BoundedChannelTests {
 
-    @Test("Send and receive single element")
-    func sendReceiveSingleElement() async throws {
+    @Test
+    func `Send and receive single element`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         try await channel.sender.send(42)
         channel.close()
@@ -24,16 +24,16 @@ struct BoundedChannelTests {
         #expect(value == 42)
     }
 
-    @Test("Send succeeds when channel has space")
-    func sendSucceeds() async throws {
+    @Test
+    func `Send succeeds when channel has space`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 10)
         try await channel.sender.send(42)
         channel.close()
         _ = try await channel.receiver.receive()
     }
 
-    @Test("Closed channel rejects send")
-    func closedChannelRejectsSend() async {
+    @Test
+    func `Closed channel rejects send`() async {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         channel.close()
         do throws(Async.Channel<Int>.Error) {
@@ -49,8 +49,8 @@ struct BoundedChannelTests {
         }
     }
 
-    @Test("send.immediate throws full when buffer full")
-    func sendImmediateThrowsFullWhenFull() async throws {
+    @Test
+    func `send.immediate throws full when buffer full`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         try channel.sender.send.immediate(1)
         do throws(Async.Channel<Int>.Error) {
@@ -67,8 +67,8 @@ struct BoundedChannelTests {
         _ = try channel.receiver.receive.immediate()
     }
 
-    @Test("Receive returns nil after close and drain")
-    func receiveReturnsNilAfterCloseAndDrain() async throws {
+    @Test
+    func `Receive returns nil after close and drain`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 10)
         try await channel.sender.send(1)
         try await channel.sender.send(2)
@@ -83,8 +83,8 @@ struct BoundedChannelTests {
         #expect(third == nil)
     }
 
-    @Test("receive.immediate throws empty when buffer empty")
-    func receiveImmediateThrowsEmptyWhenEmpty() {
+    @Test
+    func `receive.immediate throws empty when buffer empty`() {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         do throws(Async.Channel<Int>.Error) {
             _ = try channel.receiver.receive.immediate()
@@ -100,16 +100,16 @@ struct BoundedChannelTests {
         _ = channel.sender  // Keep sender alive to prevent auto-close
     }
 
-    @Test("receive.immediate returns element when available")
-    func receiveImmediateReturnsElement() async throws {
+    @Test
+    func `receive.immediate returns element when available`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         try await channel.sender.send(42)
         let result = try channel.receiver.receive.immediate()
         #expect(result == 42)
     }
 
-    @Test("isClosed reflects state")
-    func isClosedReflectsState() {
+    @Test
+    func `isClosed reflects state`() {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         #expect(channel.sender.isClosed == false)
         #expect(channel.isClosed == false)
@@ -118,8 +118,8 @@ struct BoundedChannelTests {
         #expect(channel.isClosed == true)
     }
 
-    @Test("Receive suspends until element available")
-    func receiveSuspendsUntilElement() async throws {
+    @Test
+    func `Receive suspends until element available`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         let sender = channel.sender
         let started = Async.Barrier(parties: 2)
@@ -136,8 +136,8 @@ struct BoundedChannelTests {
         #expect(result == 42)
     }
 
-    @Test("Receive resumes with nil on close")
-    func receiveResumesOnClose() async throws {
+    @Test
+    func `Receive resumes with nil on close`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         let sender = channel.sender
         let started = Async.Barrier(parties: 2)
@@ -154,8 +154,8 @@ struct BoundedChannelTests {
         #expect(result == nil)
     }
 
-    @Test("Send suspends when buffer is full")
-    func sendSuspendsWhenFull() async throws {
+    @Test
+    func `Send suspends when buffer is full`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         let sender = channel.sender
         let started = Async.Barrier(parties: 2)
@@ -178,8 +178,8 @@ struct BoundedChannelTests {
         #expect(second == 2)
     }
 
-    @Test("Close cancels pending sends")
-    func closeCancelsPendingSends() async throws {
+    @Test
+    func `Close cancels pending sends`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         let sender = channel.sender
         let started = Async.Barrier(parties: 2)
@@ -207,8 +207,8 @@ struct BoundedChannelTests {
         _ = try await channel.receiver.receive()
     }
 
-    @Test("Backpressure maintains order")
-    func backpressureMaintainsOrder() async throws {
+    @Test
+    func `Backpressure maintains order`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 2)
         let sender = channel.sender
 
@@ -229,8 +229,8 @@ struct BoundedChannelTests {
         #expect(received == [1, 2, 3, 4, 5])
     }
 
-    @Test("Direct delivery when receiver waiting")
-    func directDeliveryWhenReceiverWaiting() async throws {
+    @Test
+    func `Direct delivery when receiver waiting`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 1)
         let sender = channel.sender
         let started = Async.Barrier(parties: 2)
@@ -247,8 +247,8 @@ struct BoundedChannelTests {
         #expect(result == 42)
     }
 
-    @Test("Elements iteration")
-    func elementsIteration() async throws {
+    @Test
+    func `Elements iteration`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 10)
         try await channel.sender.send(1)
         try await channel.sender.send(2)
@@ -263,8 +263,8 @@ struct BoundedChannelTests {
         #expect(received == [1, 2, 3])
     }
 
-    @Test("Auto-close when sender drops")
-    func autoCloseWhenSenderDrops() async throws {
+    @Test
+    func `Auto-close when sender drops`() async throws {
         var ends: Async.Channel<Int>.Bounded.Ends
         do {
             let channel = Async.Channel<Int>.Bounded(capacity: 1)
@@ -283,8 +283,8 @@ struct BoundedChannelTests {
         // then drop sender copy to trigger auto-close
     }
 
-    @Test("Sender copies share storage")
-    func senderCopiesShareStorage() async throws {
+    @Test
+    func `Sender copies share storage`() async throws {
         let channel = Async.Channel<Int>.Bounded(capacity: 10)
         let sender1 = channel.sender
         let sender2 = sender1

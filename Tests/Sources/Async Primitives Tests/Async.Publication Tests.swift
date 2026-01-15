@@ -21,30 +21,30 @@ enum Publication {
 // MARK: - Unit Tests
 
 extension Publication.Test.Unit {
-    @Test("init creates empty slot")
-    func initCreatesEmptySlot() {
+    @Test
+    func `init creates empty slot`() {
         let publication = Async.Publication<Int>()
         let taken = publication.take()
         #expect(taken == nil)
     }
 
-    @Test("init with value creates non-empty slot")
-    func initWithValue() {
+    @Test
+    func `init with value creates non-empty slot`() {
         let publication = Async.Publication<Int>(42)
         let taken = publication.take()
         #expect(taken == 42)
     }
 
-    @Test("publish sets value")
-    func publishSetsValue() {
+    @Test
+    func `publish sets value`() {
         let publication = Async.Publication<Int>()
         publication.publish(42)
         let taken = publication.take()
         #expect(taken == 42)
     }
 
-    @Test("take clears slot")
-    func takeClearsSlot() {
+    @Test
+    func `take clears slot`() {
         let publication = Async.Publication<Int>()
         publication.publish(42)
         _ = publication.take()
@@ -52,8 +52,8 @@ extension Publication.Test.Unit {
         #expect(secondTake == nil)
     }
 
-    @Test("latest publish dominates earlier values")
-    func overwriteDominance() {
+    @Test
+    func `latest publish dominates earlier values`() {
         let publication = Async.Publication<Int>()
         publication.publish(1)
         publication.publish(2)
@@ -63,8 +63,8 @@ extension Publication.Test.Unit {
         #expect(taken == 3)
     }
 
-    @Test("multiple takes after single publish - single winner")
-    func multipleTakesAfterSinglePublish() {
+    @Test
+    func `multiple takes after single publish - single winner`() {
         let publication = Async.Publication<Int>()
         publication.publish(42)
 
@@ -81,15 +81,15 @@ extension Publication.Test.Unit {
 // MARK: - Edge Cases
 
 extension Publication.Test.EdgeCase {
-    @Test("take on never-published slot")
-    func takeOnNeverPublished() {
+    @Test
+    func `take on never-published slot`() {
         let publication = Async.Publication<String>()
         #expect(publication.take() == nil)
         #expect(publication.take() == nil)
     }
 
-    @Test("publish after take resets slot")
-    func publishAfterTake() {
+    @Test
+    func `publish after take resets slot`() {
         let publication = Async.Publication<Int>()
         publication.publish(1)
         _ = publication.take()
@@ -97,8 +97,8 @@ extension Publication.Test.EdgeCase {
         #expect(publication.take() == 2)
     }
 
-    @Test("rapid publish-take cycles")
-    func rapidPublishTakeCycles() {
+    @Test
+    func `rapid publish-take cycles`() {
         let publication = Async.Publication<Int>()
 
         for i in 0..<1000 {
@@ -115,8 +115,8 @@ extension Publication.Test.Performance {
 
     // MARK: - Single-Winner Linearization
 
-    @Test("concurrent take race - exactly one winner")
-    func concurrentTakeRace() async {
+    @Test
+    func `concurrent take race - exactly one winner`() async {
         // Multiple tasks racing to take the same value.
         // Exactly one should win, others get nil.
         // This tests single-winner linearization.
@@ -154,8 +154,8 @@ extension Publication.Test.Performance {
 
     // MARK: - Visibility / Happens-Before
 
-    @Test("publish happens-before take visibility")
-    func publishVisibility() async {
+    @Test
+    func `publish happens-before take visibility`() async {
         // This test verifies that publish() synchronizes with take().
         // If publication relied on unsynchronized memory, take() could
         // observe stale or garbage values.
@@ -192,8 +192,8 @@ extension Publication.Test.Performance {
 
     // MARK: - Interleaving with Assertions
 
-    @Test("publish-take interleaving observes valid values")
-    func publishTakeInterleaving() async {
+    @Test
+    func `publish-take interleaving observes valid values`() async {
         // Concurrent publish and take with assertions on observed values.
         // This is stronger than "no crash" - it asserts semantic correctness.
         let publication = Async.Publication<Int>()
@@ -241,8 +241,8 @@ extension Publication.Test.Performance {
 
     // MARK: - High Contention Admissibility
 
-    @Test("high contention publish-take admissibility")
-    func highContentionAdmissibility() async {
+    @Test
+    func `high contention publish-take admissibility`() async {
         // Multiple publishers and takers racing.
         // Assert: all observed values are in the published range.
         let publication = Async.Publication<Int>()
@@ -297,8 +297,8 @@ extension Publication.Test.Performance {
 
     // MARK: - Cancellation Bridge Pattern
 
-    @Test("cancellation bridge pattern - token race")
-    func cancellationBridgePattern() async {
+    @Test
+    func `cancellation bridge pattern - token race`() async {
         // This tests the actual pattern Publication is designed for:
         // publish a token, then race between operation completion and cancellation.
         // Exactly one path should claim the token.
