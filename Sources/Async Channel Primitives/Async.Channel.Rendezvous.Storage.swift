@@ -55,7 +55,7 @@
         static func handle(
             _ action: consuming Async.Channel<Element>.Rendezvous.State.Send.Action
         ) {
-            switch consume action {
+            switch action {
             case .wait(var cancelled):
                 cancelled.drain { flagged in
                     flagged.resumption(resolving: { _ in .cancelled }).resume()
@@ -77,7 +77,7 @@
         static func handle(
             _ action: consuming Async.Channel<Element>.Rendezvous.State.Receive.Action
         ) {
-            switch consume action {
+            switch action {
             case .wait(var cancelled):
                 cancelled.drain { flagged in
                     flagged.resumption(resolving: { _ in .cancelled }).resume()
