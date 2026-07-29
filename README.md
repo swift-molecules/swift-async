@@ -14,7 +14,7 @@ Raw async coordination primitives — `Channel` / `Broadcast` / `Semaphore` / `M
 - **`swift-async-algorithms`** ships operators over `AsyncSequence` (`zip`, `merge`, `throttle`, `debounce`, `chain`, `combineLatest`, …) plus the `AsyncChannel` / `AsyncStream` family for streaming pipelines. Reach for it when you want sequence-shaped transformations and broadcast/multicast in the `AsyncSequence` idiom.
 - **`swift-async-primitives`** ships the raw coordination primitives a layer below `AsyncSequence` (lock + condition + admission). Reach for it when you need a coordination primitive below the sequence idiom, when your element type is non-`Copyable`, or when you want the cancellation contract surfaced as `Async.Lifecycle.Error.cancelled`.
 
-The two surfaces overlap on the word "channel" but differ in semantics: `AsyncChannel` is unbuffered and multi-consumer, while this package's `Async.Channel.Bounded` / `.Unbounded` are single-receiver, support `~Copyable` elements, and expose per-primitive backpressure / ordering / fairness contracts (see the `Semantics` DocC article). Where surfaces overlap, pick by contract; where they don't, the two compose — wrap a primitive's output in an `AsyncSequence` and feed it through async-algorithms operators.
+The two surfaces overlap on the word "channel" but differ in abstraction. `Async.Channel.Rendezvous` is the raw unbuffered, multi-receiver handoff primitive; an `AsyncSequence`-shaped `AsyncChannel` compatibility surface belongs above that contract. The package also provides single-receiver `Async.Channel.Bounded` and `.Unbounded` variants. All three raw variants support `~Copyable` elements and expose typed cancellation and close behavior (see the `Semantics` DocC article).
 
 ---
 
@@ -70,6 +70,7 @@ Coordination primitives keep the **suspending** form at the top level and namesp
 
 - `try await sender.send(value)` suspends if the buffer is full; `try sender.send.immediate(value)` does not, throwing `.full` / `.closed` / `.cancelled` instead.
 - `try await receiver.receive()` suspends if the buffer is empty; `try receiver.receive.immediate()` does not, throwing `.empty` / `.cancelled` (and returning `nil` once drained and closed).
+- Rendezvous handles expose only the suspending form: `send(_:)` waits for one receiver to accept the element, while `receive()` waits for one sender. There is no element buffer or `AsyncSequence` view.
 
 The pattern keeps top-level type APIs narrow while making the variant forms discoverable through the accessor.
 

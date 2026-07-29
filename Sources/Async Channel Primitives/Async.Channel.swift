@@ -19,6 +19,7 @@
         /// Available channel types:
         /// - `Unbounded`: Unlimited buffer, sync send, async receive
         /// - `Bounded`: Capacity-limited buffer with backpressure
+        /// - `Rendezvous`: Unbuffered, multi-receiver handoff
         public struct Channel<Element: ~Copyable> {}
     }
 

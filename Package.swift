@@ -207,6 +207,7 @@ let package = Package(
                 .product(name: "Memory Heap Primitives", package: "swift-memory-heap-primitives"),
                 .product(name: "Ownership Primitives", package: "swift-ownership-primitives"),
                 .product(name: "Pair Primitives", package: "swift-pair-primitives"),
+                .product(name: "Queue Primitive", package: "swift-queue-primitives"),
                 .product(name: "Queue Primitives", package: "swift-queue-primitives"),
                 .product(name: "Index Primitives", package: "swift-index-primitives"),
                 .product(name: "Storage Contiguous Primitives", package: "swift-storage-primitives"),
