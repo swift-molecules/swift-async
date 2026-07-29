@@ -38,7 +38,7 @@ extension Benchmark.UnboundedChannel {
         ends.close()
 
         var count = 0
-        while let _ = try await ends.receiver.receive() { count += 1 }
+        while try await ends.receiver.receive() != nil { count += 1 }
         #expect(count == Benchmark.iterations)
     }
 
@@ -55,7 +55,7 @@ extension Benchmark.UnboundedChannel {
         ends.close()
 
         var count = 0
-        while let _ = try await ends.receiver.receive() { count += 1 }
+        while try await ends.receiver.receive() != nil { count += 1 }
         #expect(count == Benchmark.iterations)
     }
 }
@@ -92,7 +92,7 @@ extension Benchmark.UnboundedChannel {
         let receiver = Task {
             await started.arrive()
             var count = 0
-            while let _ = try await ends.receiver.receive() { count += 1 }
+            while try await ends.receiver.receive() != nil { count += 1 }
             return count
         }
 
