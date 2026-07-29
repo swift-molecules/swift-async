@@ -9,6 +9,8 @@
 //
 // ===----------------------------------------------------------------------===//
 
+import _Concurrency
+
 extension Async {
     /// A deferred value computation that preserves caller isolation.
     ///
