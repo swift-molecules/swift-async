@@ -12,7 +12,11 @@
 public import Async_Lifecycle_Primitives
 public import Async_Primitive
 public import Async_Waiter_Primitives
+internal import Buffer_Ring_Primitive
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
 public import Queue_Primitive
+internal import Storage_Contiguous_Primitives
 
 extension Async.Semaphore {
     /// Internal synchronized state for the semaphore.
