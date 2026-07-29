@@ -29,14 +29,16 @@
                     Ownership.Slot<Element>
                 >
             init(
-                sender: consuming Async.Waiter.Entry<
-                    Send.Signal,
-                    Ownership.Slot<Element>
-                >,
-                receiver: consuming Async.Waiter.Entry<
-                    Receive.Signal,
-                    Ownership.Slot<Element>
-                >
+                sender:
+                    consuming Async.Waiter.Entry<
+                        Send.Signal,
+                        Ownership.Slot<Element>
+                    >,
+                receiver:
+                    consuming Async.Waiter.Entry<
+                        Receive.Signal,
+                        Ownership.Slot<Element>
+                    >
             ) {
                 self.sender = sender
                 self.receiver = receiver

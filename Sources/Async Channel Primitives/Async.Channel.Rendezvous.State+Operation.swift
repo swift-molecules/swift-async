@@ -19,10 +19,11 @@
 
     extension Async.Channel.Rendezvous.State where Element: ~Copyable {
         mutating func send(
-            _ entry: consuming Async.Waiter.Entry<
-                Send.Signal,
-                Ownership.Slot<Element>
-            >
+            _ entry:
+                consuming Async.Waiter.Entry<
+                    Send.Signal,
+                    Ownership.Slot<Element>
+                >
         ) -> Send.Action {
             var cancelled:
                 Async.Waiter.Queue.Drain<
@@ -50,10 +51,11 @@
             return .wait(cancelled)
         }
         mutating func receive(
-            _ entry: consuming Async.Waiter.Entry<
-                Receive.Signal,
-                Ownership.Slot<Element>
-            >
+            _ entry:
+                consuming Async.Waiter.Entry<
+                    Receive.Signal,
+                    Ownership.Slot<Element>
+                >
         ) -> Receive.Action {
             var cancelled:
                 Async.Waiter.Queue.Drain<
@@ -95,12 +97,14 @@
         }
         mutating func reap(
             send: Send.Type
-        ) -> Async.Waiter.Queue.Drain<
-            Async.Waiter.Queue.Flagged<
-                Send.Signal,
-                Ownership.Slot<Element>
+        )
+            -> Async.Waiter.Queue.Drain<
+                Async.Waiter.Queue.Flagged<
+                    Send.Signal,
+                    Ownership.Slot<Element>
+                >
             >
-        > {
+        {
             var cancelled:
                 Async.Waiter.Queue.Drain<
                     Async.Waiter.Queue.Flagged<
@@ -113,12 +117,14 @@
         }
         mutating func reap(
             receive: Receive.Type
-        ) -> Async.Waiter.Queue.Drain<
-            Async.Waiter.Queue.Flagged<
-                Receive.Signal,
-                Ownership.Slot<Element>
+        )
+            -> Async.Waiter.Queue.Drain<
+                Async.Waiter.Queue.Flagged<
+                    Receive.Signal,
+                    Ownership.Slot<Element>
+                >
             >
-        > {
+        {
             var cancelled:
                 Async.Waiter.Queue.Drain<
                     Async.Waiter.Queue.Flagged<
