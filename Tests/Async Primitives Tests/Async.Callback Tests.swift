@@ -16,6 +16,8 @@ import Testing
     import Darwin
 #elseif canImport(Glibc)
     import Glibc
+#elseif os(Windows)
+    import WinSDK
 #endif
 
 // MARK: - Helpers
@@ -35,8 +37,10 @@ import Testing
 private func currentThreadID() -> UInt {
     #if canImport(Darwin)
         UInt(pthread_mach_thread_np(pthread_self()))
-    #else
+    #elseif canImport(Glibc)
         UInt(pthread_self())
+    #elseif os(Windows)
+        UInt(GetCurrentThreadId())
     #endif
 }
 
