@@ -12,8 +12,12 @@
 internal import Async_Mutex_Primitives
 public import Async_Primitive
 public import Async_Waiter_Primitives
+internal import Buffer_Ring_Primitive
+internal import Memory_Allocator_Primitive
+internal import Memory_Heap_Primitives
 public import Queue_Primitive
 internal import Queue_Primitives
+internal import Storage_Contiguous_Primitives
 
 // MARK: - Signal
 
