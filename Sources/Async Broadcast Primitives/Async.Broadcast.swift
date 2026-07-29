@@ -147,79 +147,80 @@
         /// - Parameter element: The element to broadcast.
         public func send(_ element: sending Element) {
             let bufferLimit = buffer.limit
-            let (continuationsToResume, lossEvents): (
-                [(CheckedContinuation<Next.Outcome, Never>, Element)], [Loss]
-            ) = _state.withLock { state in
-                guard state.is == .active else { return ([], []) }
+            let (continuationsToResume, lossEvents):
+                (
+                    [(CheckedContinuation<Next.Outcome, Never>, Element)], [Loss]
+                ) = _state.withLock { state in
+                    guard state.is == .active else { return ([], []) }
 
-                let index = state.next.index
-                state.next.index += 1
+                    let index = state.next.index
+                    state.next.index += 1
 
-                // Add to buffer
-                state.buffer.push((index, element), to: .back)
+                    // Add to buffer
+                    state.buffer.push((index, element), to: .back)
 
-                // Trim to the documented replay window (`buffer.limit`)
-                // unconditionally — a stalled subscriber does not grow the
-                // buffer without bound. Subscribers left behind the new
-                // floor observe loss: their cursor is advanced past
-                // whatever was just dropped (see "Delivery Guarantees" on
-                // `Broadcast` — slow subscribers may miss events once they
-                // fall behind the replay window).
-                var droppedThroughIndex: UInt64? = nil
-                while state.buffer.count > bufferLimit {
-                    guard let front = state.buffer.take(from: .front) else { break }
-                    droppedThroughIndex = front.index
-                }
-
-                // Fired exactly here, once per affected subscriber: the
-                // point where a lagging cursor is advanced past dropped
-                // entries. See `Loss`'s doc for the full firing contract.
-                var lossEvents: [Loss] = []
-                if let droppedThroughIndex {
-                    let floor = droppedThroughIndex + 1
-                    var laggingIds: [UInt64] = []
-                    state.subscribers.forEach { id, subscriber in
-                        if subscriber.cursor < floor {
-                            laggingIds.append(id)
-                        }
+                    // Trim to the documented replay window (`buffer.limit`)
+                    // unconditionally — a stalled subscriber does not grow the
+                    // buffer without bound. Subscribers left behind the new
+                    // floor observe loss: their cursor is advanced past
+                    // whatever was just dropped (see "Delivery Guarantees" on
+                    // `Broadcast` — slow subscribers may miss events once they
+                    // fall behind the replay window).
+                    var droppedThroughIndex: UInt64? = nil
+                    while state.buffer.count > bufferLimit {
+                        guard let front = state.buffer.take(from: .front) else { break }
+                        droppedThroughIndex = front.index
                     }
-                    for id in laggingIds {
-                        _ = state.subscribers.withMutableValue(forKey: id) { subscriber in
-                            let droppedCount = Int(floor - subscriber.cursor)
-                            lossEvents.append(
-                                Loss(
-                                    subscriberID: id,
-                                    droppedCount: droppedCount,
-                                    resumingAtIndex: floor,
-                                    reason: .capacityLimit
+
+                    // Fired exactly here, once per affected subscriber: the
+                    // point where a lagging cursor is advanced past dropped
+                    // entries. See `Loss`'s doc for the full firing contract.
+                    var lossEvents: [Loss] = []
+                    if let droppedThroughIndex {
+                        let floor = droppedThroughIndex + 1
+                        var laggingIds: [UInt64] = []
+                        state.subscribers.forEach { id, subscriber in
+                            if subscriber.cursor < floor {
+                                laggingIds.append(id)
+                            }
+                        }
+                        for id in laggingIds {
+                            _ = state.subscribers.withMutableValue(forKey: id) { subscriber in
+                                let droppedCount = Int(floor - subscriber.cursor)
+                                lossEvents.append(
+                                    Loss(
+                                        subscriberID: id,
+                                        droppedCount: droppedCount,
+                                        resumingAtIndex: floor,
+                                        reason: .capacityLimit
+                                    )
                                 )
-                            )
-                            subscriber.cursor = floor
+                                subscriber.cursor = floor
+                            }
                         }
                     }
-                }
 
-                // Find waiting subscribers (forEach avoids key snapshot heap allocation)
-                var toResume: [(CheckedContinuation<Next.Outcome, Never>, Element)] = []
-                var wakeIds: [UInt64] = []
-                state.subscribers.forEach { id, subscriber in
-                    if subscriber.cursor == index, subscriber.continuation != nil {
-                        wakeIds.append(id)
-                    }
-                }
-
-                // Update woken subscriber state (O(1) lookup per subscriber)
-                for id in wakeIds {
-                    _ = state.subscribers.withMutableValue(forKey: id) { subscriber in
-                        if let cont = subscriber.continuation {
-                            subscriber.cursor = index + 1
-                            subscriber.continuation = nil
-                            toResume.append((cont, element))
+                    // Find waiting subscribers (forEach avoids key snapshot heap allocation)
+                    var toResume: [(CheckedContinuation<Next.Outcome, Never>, Element)] = []
+                    var wakeIds: [UInt64] = []
+                    state.subscribers.forEach { id, subscriber in
+                        if subscriber.cursor == index, subscriber.continuation != nil {
+                            wakeIds.append(id)
                         }
                     }
+
+                    // Update woken subscriber state (O(1) lookup per subscriber)
+                    for id in wakeIds {
+                        _ = state.subscribers.withMutableValue(forKey: id) { subscriber in
+                            if let cont = subscriber.continuation {
+                                subscriber.cursor = index + 1
+                                subscriber.continuation = nil
+                                toResume.append((cont, element))
+                            }
+                        }
+                    }
+                    return (toResume, lossEvents)
                 }
-                return (toResume, lossEvents)
-            }
 
             // Fired outside the lock, same discipline as resuming waiting
             // continuations below: a handler that calls back into this
