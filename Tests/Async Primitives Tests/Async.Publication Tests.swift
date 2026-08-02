@@ -105,7 +105,7 @@ extension Publication.Test.EdgeCase {
     func `rapid publish-take cycles`() {
         let publication = Async.Publication<Int>()
 
-        for i in 0..<1000 {
+        (0..<1000).forEach { i in
             publication.publish(i)
             let taken = publication.take()
             #expect(taken == i)

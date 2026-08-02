@@ -177,7 +177,7 @@ struct UnboundedChannelTests {
 
         // Should have received all values
         #expect(received.count == count)
-        for i in 0..<count {
+        (0..<count).forEach { i in
             #expect(received.contains(i))
         }
     }

@@ -178,7 +178,7 @@
             let broadcast = Async.Broadcast<Int>(bufferCapacity: 100)
             let subscription = broadcast.subscribe()
 
-            for i in 1...100 {
+            (1...100).forEach { i in
                 broadcast.send(i)
             }
             broadcast.finish()
