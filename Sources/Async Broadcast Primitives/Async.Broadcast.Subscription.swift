@@ -31,11 +31,6 @@
         public struct Subscription: Sendable {
             let broadcast: Async.Broadcast<Element>
             let id: UInt64
-
-            init(broadcast: Async.Broadcast<Element>, id: UInt64) {
-                self.broadcast = broadcast
-                self.id = id
-            }
         }
     }
 
