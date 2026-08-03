@@ -130,13 +130,6 @@
         struct WaiterEntry: Sendable {
             let continuation: CheckedContinuation<Outcome, Never>
             let flag: Async.Waiter.Flag
-            init(
-                continuation: CheckedContinuation<Outcome, Never>,
-                flag: Async.Waiter.Flag
-            ) {
-                self.continuation = continuation
-                self.flag = flag
-            }
         }
 
         struct State: Sendable {

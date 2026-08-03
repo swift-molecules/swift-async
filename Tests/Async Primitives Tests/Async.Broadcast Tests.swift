@@ -280,7 +280,7 @@
                 await yieldProgress(iterations: 20)
 
                 // Send all elements
-                for i in 0..<elementCount {
+                (0..<elementCount).forEach { i in
                     broadcast.send(i)
                 }
                 broadcast.finish()
@@ -394,7 +394,7 @@
                 let preBufferedCount = 5
 
                 // Pre-send some elements (subscribers created after won't see these)
-                for i in 0..<preBufferedCount {
+                (0..<preBufferedCount).forEach { i in
                     broadcast.send(i)
                 }
 
@@ -527,7 +527,7 @@
                 completedSubscribers += 1
 
                 // INVARIANT: Strict monotonic ordering
-                for i in 1..<result.elements.count {
+                (1..<result.elements.count).forEach { i in
                     #expect(
                         result.elements[i] > result.elements[i - 1],
                         "Subscriber \(result.id): Out of order at index \(i): \(result.elements[i - 1]) -> \(result.elements[i])"
@@ -621,7 +621,7 @@
             )
 
             // Slow subscriber: strictly increasing (no out-of-order)
-            for i in 1..<slowReceived.count {
+            (1..<slowReceived.count).forEach { i in
                 #expect(
                     slowReceived[i] > slowReceived[i - 1],
                     "Slow subscriber elements out of order at index \(i)"
@@ -651,7 +651,7 @@
             let subscription = broadcast.subscribe()
 
             // Send elements
-            for i in 0..<10 {
+            (0..<10).forEach { i in
                 broadcast.send(i)
             }
             broadcast.finish()
@@ -695,7 +695,7 @@
             let stalled = broadcast.subscribe()
 
             let elementCount = 50
-            for i in 0..<elementCount {
+            (0..<elementCount).forEach { i in
                 broadcast.send(i)
             }
             broadcast.finish()
@@ -732,7 +732,7 @@
             let stalled = broadcast.subscribe()
 
             let elementCount = 50
-            for i in 0..<elementCount {
+            (0..<elementCount).forEach { i in
                 broadcast.send(i)
             }
             broadcast.finish()
@@ -782,7 +782,7 @@
             }
             let subscription = broadcast.subscribe()
 
-            for i in 0..<10 {
+            (0..<10).forEach { i in
                 broadcast.send(i)
             }
             broadcast.finish()
@@ -808,7 +808,7 @@
             // subscriber ever exists, so it cannot have been "lagging" —
             // there is nothing for its brand-new cursor to have fallen
             // behind.
-            for i in 0..<20 {
+            (0..<20).forEach { i in
                 broadcast.send(i)
             }
 
@@ -817,7 +817,7 @@
 
             let lateSubscriber = broadcast.subscribe()
 
-            for i in 20..<24 {
+            (20..<24).forEach { i in
                 broadcast.send(i)
             }
             broadcast.finish()
@@ -848,7 +848,7 @@
             let stalledB = broadcast.subscribe()
 
             let elementCount = 30
-            for i in 0..<elementCount {
+            (0..<elementCount).forEach { i in
                 broadcast.send(i)
             }
             broadcast.finish()
@@ -889,7 +889,7 @@
             let stalled = broadcast.subscribe()
 
             let elementCount = 20
-            for i in 0..<elementCount {
+            (0..<elementCount).forEach { i in
                 broadcast.send(i)
             }
             broadcast.finish()
