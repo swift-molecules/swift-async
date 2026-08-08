@@ -22,8 +22,16 @@ let package = Package(
             targets: ["Async Callback Primitives"]
         ),
         .library(
+            name: "Async Cancellation Primitives",
+            targets: ["Async Cancellation Primitives"]
+        ),
+        .library(
             name: "Async Continuation Primitives",
             targets: ["Async Continuation Primitives"]
+        ),
+        .library(
+            name: "Async Demand Primitives",
+            targets: ["Async Demand Primitives"]
         ),
         .library(
             name: "Async Lifecycle Primitives",
@@ -123,7 +131,18 @@ let package = Package(
             dependencies: ["Async Primitive"]
         ),
         .target(
+            name: "Async Cancellation Primitives",
+            dependencies: [
+                "Async Primitive",
+                "Async Mutex Primitives",
+            ]
+        ),
+        .target(
             name: "Async Continuation Primitives",
+            dependencies: ["Async Primitive"]
+        ),
+        .target(
+            name: "Async Demand Primitives",
             dependencies: ["Async Primitive"]
         ),
         .target(
@@ -276,7 +295,9 @@ let package = Package(
             dependencies: [
                 "Async Primitive",
                 "Async Callback Primitives",
+                "Async Cancellation Primitives",
                 "Async Continuation Primitives",
+                "Async Demand Primitives",
                 "Async Lifecycle Primitives",
                 "Async Precedence Primitives",
                 "Async Mutex Primitives",
