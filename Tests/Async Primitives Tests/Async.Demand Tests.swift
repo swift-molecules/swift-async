@@ -27,10 +27,14 @@ extension Demand.Test.Unit {
     @Test
     func fulfillConsumesExactlyTheRequestedCount() {
         var demand = Async.Demand.count(3)
-        #expect(demand.fulfill())
-        #expect(demand.fulfill())
-        #expect(demand.fulfill())
-        #expect(!demand.fulfill())
+        let first = demand.fulfill()
+        let second = demand.fulfill()
+        let third = demand.fulfill()
+        let fourth = demand.fulfill()
+        #expect(first)
+        #expect(second)
+        #expect(third)
+        #expect(!fourth)
         #expect(demand.isNone)
     }
 
@@ -41,8 +45,10 @@ extension Demand.Test.Unit {
         let released = demand.release()
         #expect(released == .count(5))
         #expect(demand.isNone)
-        #expect(demand.release() == .none)
-        #expect(!demand.fulfill())
+        let secondRelease = demand.release()
+        #expect(secondRelease == .none)
+        let fulfilled = demand.fulfill()
+        #expect(!fulfilled)
     }
 
     /// Unlimited demand fulfills without counting.
@@ -50,7 +56,8 @@ extension Demand.Test.Unit {
     func unlimitedFulfillsWithoutCounting() {
         var demand = Async.Demand.unlimited
         for _ in 0..<1000 {
-            #expect(demand.fulfill())
+            let fulfilled = demand.fulfill()
+            #expect(fulfilled)
         }
         #expect(demand.isUnlimited)
         #expect(demand.count == nil)

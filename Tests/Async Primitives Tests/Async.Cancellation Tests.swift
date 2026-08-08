@@ -30,9 +30,11 @@ extension Cancellation.Test.Unit {
     func stateTransitionsExactlyOnce() {
         var state = Async.Cancellation.State.active
         #expect(!state.isCancelled)
-        #expect(state.cancel())
+        let firstTransition = state.cancel()
+        #expect(firstTransition)
         #expect(state.isCancelled)
-        #expect(!state.cancel())
+        let secondTransition = state.cancel()
+        #expect(!secondTransition)
         #expect(state.isCancelled)
     }
 
@@ -135,7 +137,8 @@ extension Cancellation.Test.EdgeCase {
             }
         }
         source.cancel()
-        #expect(observed.load(ordering: .relaxed))
+        let wasObserved = observed.load(ordering: .relaxed)
+        #expect(wasObserved)
     }
 }
 
