@@ -144,28 +144,46 @@ extension Cancellation.Test.EdgeCase {
 
 // MARK: - Concurrency
 
+/// Sendable counter for cross-task coordination.
+///
+/// `Atomic` is non-copyable, so a local atomic can only be captured by
+/// reference; a `sending` closure — such as the one `TaskGroup.addTask`
+/// takes — cannot accept that capture, because the storage stays reachable
+/// from the enclosing task. Holding the atomic as a stored property of a
+/// `Sendable` class gives every task a copyable, concurrency-safe handle on
+/// the same storage, so the counting stays a genuine cross-task observation.
+private final class Counter: Sendable {
+    private let _value = Atomic<Int>(0)
+
+    var value: Int { self._value.load(ordering: .relaxed) }
+
+    func increment() {
+        self._value.wrappingAdd(1, ordering: .relaxed)
+    }
+}
+
 extension Cancellation.Test.Concurrency {
     /// Law: concurrent cancellation performs exactly one transition and
     /// resumes every handler exactly once.
     @Test
     func concurrentCancelIsExactlyOnce() async {
         let source = Async.Cancellation.Source()
-        let handlerRuns = Atomic<Int>(0)
-        let transitions = Atomic<Int>(0)
+        let handlerRuns = Counter()
+        let transitions = Counter()
         for _ in 0..<16 {
-            _ = source.onCancel { handlerRuns.wrappingAdd(1, ordering: .relaxed) }
+            _ = source.onCancel { handlerRuns.increment() }
         }
         await withTaskGroup(of: Void.self) { group in
             for _ in 0..<32 {
                 group.addTask {
                     if source.cancel() {
-                        transitions.wrappingAdd(1, ordering: .relaxed)
+                        transitions.increment()
                     }
                 }
             }
         }
-        #expect(transitions.load(ordering: .relaxed) == 1)
-        #expect(handlerRuns.load(ordering: .relaxed) == 16)
+        #expect(transitions.value == 1)
+        #expect(handlerRuns.value == 16)
     }
 
     /// Racing registration against cancellation: every handler runs
@@ -174,16 +192,16 @@ extension Cancellation.Test.Concurrency {
     func registrationRacesCancellation() async {
         for _ in 0..<64 {
             let source = Async.Cancellation.Source()
-            let runs = Atomic<Int>(0)
+            let runs = Counter()
             await withTaskGroup(of: Void.self) { group in
                 group.addTask {
-                    _ = source.onCancel { runs.wrappingAdd(1, ordering: .relaxed) }
+                    _ = source.onCancel { runs.increment() }
                 }
                 group.addTask {
                     source.cancel()
                 }
             }
-            #expect(runs.load(ordering: .relaxed) == 1)
+            #expect(runs.value == 1)
         }
     }
 }
