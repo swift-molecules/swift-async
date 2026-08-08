@@ -69,6 +69,7 @@ extension Async.Demand {
     /// finite demand never silently becomes ``unlimited``.
     ///
     /// - Parameter count: The number of elements the consumer permits.
+    /// - Returns: A finite demand clamped to ``maximumFiniteCount``.
     @inlinable
     public static func count(_ count: UInt64) -> Self {
         Self(rawValue: min(count, Self.maximumFiniteCount))
