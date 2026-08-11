@@ -12,7 +12,7 @@
 // Async channels require task suspension which is not available on embedded Swift.
 #if !hasFeature(Embedded)
 
-    extension Async._Channel.Unbounded where Element: ~Copyable {
+    extension Async.Channel.Unbounded where Element: ~Copyable {
         /// Bundle containing both sender and receiver.
         ///
         /// `Ends` is `~Copyable` because it contains the `~Copyable` receiver.
@@ -32,9 +32,9 @@
         }
     }
 
-    extension Async._Channel.Unbounded.Ends where Element: ~Copyable {
+    extension Async.Channel.Unbounded.Ends where Element: ~Copyable {
         /// View for receiving elements.
-        public var receiver: Async._Channel<Element>.Unbounded.Receiver {
+        public var receiver: Async.Channel<Element>.Unbounded.Receiver {
             _read {
                 yield _receiver
             }
@@ -44,8 +44,8 @@
         }
 
         /// View for sending elements.
-        public var sender: Async._Channel<Element>.Unbounded.Sender {
-            Async._Channel<Element>.Unbounded.Sender(storage: storage)
+        public var sender: Async.Channel<Element>.Unbounded.Sender {
+            Async.Channel<Element>.Unbounded.Sender(storage: storage)
         }
 
         /// Close the channel.

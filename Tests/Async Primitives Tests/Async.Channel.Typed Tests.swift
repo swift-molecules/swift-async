@@ -10,15 +10,15 @@
 import Async_Primitives_Test_Support
 import Testing
 
-private enum TypedChannelFailure: Swift.Error, Sendable, Equatable {
-    case stopped(Int)
-}
-
 @Suite
-struct `Typed Channel Tests` {
+struct `TypedChannel` {
+    enum Failure: Swift.Error, Sendable, Equatable {
+        case stopped(Int)
+    }
+
     @Test
     func `sender sends and finishes receiver`() async throws {
-        var channel = Async.Channel<Int, TypedChannelFailure>.Bounded(capacity: 1)
+        var channel = Async.Channel<Int>.Typed<Failure>.Bounded(capacity: 1)
 
         try await channel.sender.send(42)
         channel.sender.finish()
@@ -29,13 +29,13 @@ struct `Typed Channel Tests` {
 
     @Test
     func `sender failure preserves buffered drain and identity`() async throws {
-        var channel = Async.Channel<Int, TypedChannelFailure>.Bounded(capacity: 2)
+        var channel = Async.Channel<Int>.Typed<Failure>.Bounded(capacity: 2)
 
         try await channel.sender.send(1)
         channel.sender.fail(.stopped(2))
 
         #expect(try await channel.receiver.receive() == 1)
-        do throws(Async.Channel<Int, TypedChannelFailure>.Error) {
+        do throws(Async.Channel<Int>.Typed<Failure>.Error) {
             _ = try await channel.receiver.receive()
             Issue.record("Expected sender failure after the buffered drain")
         } catch {
@@ -50,11 +50,11 @@ struct `Typed Channel Tests` {
 
     @Test
     func `receiver failure propagates to sender`() async {
-        var channel = Async.Channel<Int, TypedChannelFailure>.Bounded(capacity: 1)
+        var channel = Async.Channel<Int>.Typed<Failure>.Bounded(capacity: 1)
 
         channel.receiver.fail(.stopped(3))
 
-        do throws(Async.Channel<Int, TypedChannelFailure>.Error) {
+        do throws(Async.Channel<Int>.Typed<Failure>.Error) {
             try await channel.sender.send(1)
             Issue.record("Expected receiver failure to reject the sender")
         } catch {
@@ -69,12 +69,12 @@ struct `Typed Channel Tests` {
 
     @Test
     func `first terminal operation wins`() async throws {
-        var channel = Async.Channel<Int, TypedChannelFailure>.Bounded(capacity: 1)
+        var channel = Async.Channel<Int>.Typed<Failure>.Bounded(capacity: 1)
 
         channel.sender.fail(.stopped(4))
         channel.sender.finish()
 
-        do throws(Async.Channel<Int, TypedChannelFailure>.Error) {
+        do throws(Async.Channel<Int>.Typed<Failure>.Error) {
             _ = try await channel.receiver.receive()
             Issue.record("Expected the first terminal failure")
         } catch {
@@ -89,7 +89,7 @@ struct `Typed Channel Tests` {
 
     @Test
     func `typed sender retains bounded backpressure`() async throws {
-        var channel = Async.Channel<Int, TypedChannelFailure>.Bounded(capacity: 1)
+        var channel = Async.Channel<Int>.Typed<Failure>.Bounded(capacity: 1)
         let sender = channel.sender
         let gate = Async.Barrier(parties: 2)
 
@@ -107,14 +107,14 @@ struct `Typed Channel Tests` {
 
     @Test
     func `receiver failure resumes a backpressured sender with the same failure`() async throws {
-        var channel = Async.Channel<Int, TypedChannelFailure>.Bounded(capacity: 1)
+        var channel = Async.Channel<Int>.Typed<Failure>.Bounded(capacity: 1)
         let sender = channel.sender
         let gate = Async.Barrier(parties: 2)
 
         try await sender.send(1)
-        let blocked = Task { () -> Async.Channel<Int, TypedChannelFailure>.Error? in
+        let blocked = Task { () -> Async.Channel<Int>.Typed<Failure>.Error? in
             try? await gate.arrive()
-            do throws(Async.Channel<Int, TypedChannelFailure>.Error) {
+            do throws(Async.Channel<Int>.Typed<Failure>.Error) {
                 try await sender.send(2)
                 return nil
             } catch {
@@ -136,14 +136,14 @@ struct `Typed Channel Tests` {
 
     @Test
     func `cancelling a backpressured sender preserves cancellation`() async throws {
-        var channel = Async.Channel<Int, TypedChannelFailure>.Bounded(capacity: 1)
+        var channel = Async.Channel<Int>.Typed<Failure>.Bounded(capacity: 1)
         let sender = channel.sender
         let gate = Async.Barrier(parties: 2)
 
         try await sender.send(1)
-        let blocked = Task { () -> Async.Channel<Int, TypedChannelFailure>.Error? in
+        let blocked = Task { () -> Async.Channel<Int>.Typed<Failure>.Error? in
             try? await gate.arrive()
-            do throws(Async.Channel<Int, TypedChannelFailure>.Error) {
+            do throws(Async.Channel<Int>.Typed<Failure>.Error) {
                 try await sender.send(2)
                 return nil
             } catch {
@@ -160,6 +160,42 @@ struct `Typed Channel Tests` {
             break
         default:
             Issue.record("Expected cancellation to remain distinct from terminal failure")
+        }
+    }
+
+    @Test
+    func `duplex half close drains before the peer sees completion`() async throws {
+        var (left, right) = Async.Channel<Int>.Duplex<Failure>.pair(capacity: 1)
+
+        try await left.outbound.send(1)
+        left.outbound.finish()
+
+        #expect(try await right.inbound.receive() == 1)
+        #expect(try await right.inbound.receive() == nil)
+
+        try await right.outbound.send(2)
+        right.outbound.finish()
+
+        #expect(try await left.inbound.receive() == 2)
+        #expect(try await left.inbound.receive() == nil)
+    }
+
+    @Test
+    func `duplex receiver failure crosses to its peer outbound direction`() async {
+        var (left, right) = Async.Channel<Int>.Duplex<Failure>.pair(capacity: 1)
+
+        left.inbound.fail(.stopped(6))
+
+        do throws(Async.Channel<Int>.Typed<Failure>.Error) {
+            try await right.outbound.send(1)
+            Issue.record("Expected inbound failure to reject the matching peer outbound")
+        } catch {
+            switch error {
+            case .failed(.stopped(6)):
+                break
+            default:
+                Issue.record("Expected the inbound declared failure on the peer outbound")
+            }
         }
     }
 }

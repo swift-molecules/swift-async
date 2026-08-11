@@ -20,14 +20,14 @@
     import Buffer_Primitive
     public import Deque_Primitives
 
-    extension Async._Channel.Bounded.Receiver where Element: ~Copyable {
+    extension Async.Channel.Bounded.Receiver where Element: ~Copyable {
         /// Receive operation accessor with variants.
         public struct Receive: Sendable {
             @usableFromInline
-            let storage: Async._Channel<Element>.Bounded.Storage
+            let storage: Async.Channel<Element>.Bounded.Storage
 
             @usableFromInline
-            init(storage: Async._Channel<Element>.Bounded.Storage) {
+            init(storage: Async.Channel<Element>.Bounded.Storage) {
                 self.storage = storage
             }
 
@@ -41,7 +41,7 @@
             /// - Throws: `.empty` if the buffer is empty, `.cancelled` if the task was cancelled.
             @_optimize(none)
             @inlinable
-            public func immediate() throws(Async._Channel<Element>.Error) -> Element? {
+            public func immediate() throws(Async.Channel<Element>.Error) -> Element? {
                 let action = storage.withLock { state in
                     state.receive()
                 }

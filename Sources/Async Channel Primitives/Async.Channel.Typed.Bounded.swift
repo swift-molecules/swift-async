@@ -11,7 +11,7 @@
 
     public import Index_Primitives
 
-    extension Async._Channel.Typed where Element: ~Copyable, Failure: Swift.Error & Sendable {
+    extension Async.Channel.Typed where Element: ~Copyable, Failure: Swift.Error & Sendable {
         /// A bounded typed channel that preserves the base channel's capacity,
         /// backpressure, cancellation, FIFO, and buffered-drain behavior.
         public struct Bounded: ~Copyable, Sendable {
@@ -25,7 +25,7 @@
 
             /// Creates a bounded channel with the supplied capacity.
             public init(capacity: Index<Element>.Count) {
-                var raw = Async._Channel<Element>.Bounded(capacity: capacity)
+                var raw = Async.Channel<Element>.Bounded(capacity: capacity)
                 let terminals = TerminalStorage()
                 self.terminals = terminals
                 self.sender = Sender(raw: raw.sender, terminals: terminals)

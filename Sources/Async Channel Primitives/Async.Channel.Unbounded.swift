@@ -12,7 +12,7 @@
 // Async channels require task suspension which is not available on embedded Swift.
 #if !hasFeature(Embedded)
 
-    extension Async._Channel where Element: ~Copyable {
+    extension Async.Channel where Element: ~Copyable {
         /// Unbounded channel with single-suspended-receiver semantics.
         ///
         /// Provides an unbounded-capacity channel where sends are synchronous
@@ -20,7 +20,7 @@
         ///
         /// ## Usage
         /// ```swift
-        /// var channel = Async._Channel<Int>.Unbounded()
+        /// var channel = Async.Channel<Int>.Unbounded()
         ///
         /// // Producer task
         /// Task {
@@ -84,13 +84,13 @@
         }
     }
 
-    extension Async._Channel.Unbounded where Element: ~Copyable {
+    extension Async.Channel.Unbounded where Element: ~Copyable {
         /// Consume the channel and return a `Take` for endpoint extraction.
         ///
         /// Use after extracting the sender (Copyable) to consume the channel
         /// and obtain both endpoints as a bundle:
         /// ```swift
-        /// var channel = Async._Channel<Int>.Unbounded()
+        /// var channel = Async.Channel<Int>.Unbounded()
         /// let sender = channel.sender
         /// let ends = (consume channel).take().ends()
         /// ```
@@ -99,7 +99,7 @@
         }
     }
 
-    extension Async._Channel.Unbounded where Element: ~Copyable {
+    extension Async.Channel.Unbounded where Element: ~Copyable {
         /// Close the channel, signaling no more elements will be sent.
         ///
         /// After close:

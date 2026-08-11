@@ -32,7 +32,7 @@
 
     extension _TypedChannelError {
         @usableFromInline
-        init<Element>(terminal: Async._Channel<Element>.Typed<Failure>.Terminal) where Element: ~Copyable {
+        init<Element>(terminal: Async.Channel<Element>.Typed<Failure>.Terminal) where Element: ~Copyable {
             switch terminal {
             case .finished: self = .finished
             case .failed(let failure): self = .failed(failure)
@@ -42,7 +42,7 @@
         @usableFromInline
         init<Element>(
             raw: Async._ChannelError,
-            terminal: Async._Channel<Element>.Typed<Failure>.Terminal?
+            terminal: Async.Channel<Element>.Typed<Failure>.Terminal?
         ) where Element: ~Copyable {
             switch terminal {
             case let terminal?: self.init(terminal: terminal)

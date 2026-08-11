@@ -9,7 +9,7 @@
 
 #if !hasFeature(Embedded)
 
-    extension Async {
+    extension Async.Channel where Element: ~Copyable {
         /// A bounded, directional channel with a declared terminal failure type.
         ///
         /// The sender owns element production and may `finish()` or `fail(_)` the
@@ -17,15 +17,10 @@
         /// sender. A successful sender finish drains already-buffered elements and
         /// then makes `receive()` return `nil`; a sender failure drains those same
         /// elements and then makes `receive()` throw `.failed(_)`.
-        public typealias Channel<Element: ~Copyable, Failure: Swift.Error & Sendable> = _Channel<Element>.Typed<Failure>
-    }
-
-    extension Async._Channel where Element: ~Copyable {
-        /// Typed terminal semantics composed over the channel's bounded machinery.
         public struct Typed<Failure: Swift.Error & Sendable> {}
     }
 
-    extension Async._Channel.Typed where Element: ~Copyable, Failure: Swift.Error & Sendable {
+    extension Async.Channel.Typed where Element: ~Copyable, Failure: Swift.Error & Sendable {
         /// Errors emitted by typed endpoint operations.
         public typealias Error = _TypedChannelError<Failure>
     }

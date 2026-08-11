@@ -32,7 +32,7 @@ extension Benchmark.BoundedChannel {
     /// receiver consumes. Measures state machine + suspension overhead.
     @Test(.timed(iterations: 10, warmup: 2))
     func `1000 round-trips capacity 1`() async throws {
-        let channel = Async._Channel<Int>.Bounded(capacity: 1)
+        let channel = Async.Channel<Int>.Bounded(capacity: 1)
         let sender = channel.sender
 
         let producer = Task.detached {
@@ -54,7 +54,7 @@ extension Benchmark.BoundedChannel {
     /// All sends hit the fast path (buffer has space).
     @Test(.timed(iterations: 10, warmup: 2))
     func `1000 round-trips capacity 1000`() async throws {
-        let channel = Async._Channel<Int>.Bounded(capacity: 1_000)
+        let channel = Async.Channel<Int>.Bounded(capacity: 1_000)
         let sender = channel.sender
 
         let producer = Task.detached {
@@ -73,7 +73,7 @@ extension Benchmark.BoundedChannel {
     /// Synchronous send via send.immediate (no async overhead).
     @Test(.timed(iterations: 10, warmup: 2))
     func `1000 immediate sends capacity 1000`() async throws {
-        let channel = Async._Channel<Int>.Bounded(capacity: 1_000)
+        let channel = Async.Channel<Int>.Bounded(capacity: 1_000)
         let sender = channel.sender
 
         let producer = Task.detached {

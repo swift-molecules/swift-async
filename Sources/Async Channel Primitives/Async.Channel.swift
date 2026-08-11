@@ -13,13 +13,13 @@
 #if !hasFeature(Embedded)
 
     extension Async {
-        /// Implementation namespace for the untyped bounded channel machinery.
+        /// Namespace for channel primitives.
         ///
         /// Channels provide structured communication between concurrent tasks.
         /// Available channel types:
         /// - `Unbounded`: Unlimited buffer, sync send, async receive
         /// - `Bounded`: Capacity-limited buffer with backpressure
-        public struct _Channel<Element: ~Copyable> {}
+        public struct Channel<Element: ~Copyable> {}
     }
 
 #endif  // !hasFeature(Embedded)

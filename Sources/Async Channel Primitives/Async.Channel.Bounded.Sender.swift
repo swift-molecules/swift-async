@@ -23,7 +23,7 @@
     import Memory_Allocator_Primitive
     import Buffer_Primitive
 
-    extension Async._Channel.Bounded where Element: ~Copyable {
+    extension Async.Channel.Bounded where Element: ~Copyable {
         /// A sender handle for a bounded channel.
         ///
         /// `Sender` is a Copyable, Sendable struct that allows sending elements
@@ -59,7 +59,7 @@
         ///
         /// ## Usage
         /// ```swift
-        /// var channel = Async._Channel<Int>.Bounded(capacity: 10)
+        /// var channel = Async.Channel<Int>.Bounded(capacity: 10)
         ///
         /// // Send elements (may suspend if buffer full)
         /// try await channel.sender.send(42)
@@ -86,7 +86,7 @@
 
     // MARK: - Handle (ARC-based auto-close)
 
-    extension Async._Channel.Bounded.Sender where Element: ~Copyable {
+    extension Async.Channel.Bounded.Sender where Element: ~Copyable {
         /// Internal handle that provides ARC-based auto-close.
         ///
         /// When the last reference to this handle is released, the channel
@@ -94,10 +94,10 @@
         @usableFromInline
         final class Handle: Sendable {
             @usableFromInline
-            let storage: Async._Channel<Element>.Bounded.Storage
+            let storage: Async.Channel<Element>.Bounded.Storage
 
             @usableFromInline
-            init(storage: Async._Channel<Element>.Bounded.Storage) {
+            init(storage: Async.Channel<Element>.Bounded.Storage) {
                 self.storage = storage
             }
 
@@ -123,7 +123,7 @@
 
     // MARK: - Send Operations
 
-    extension Async._Channel.Bounded.Sender where Element: ~Copyable {
+    extension Async.Channel.Bounded.Sender where Element: ~Copyable {
         // swiftlint:disable:next workaround_marker_present
         // WORKAROUND: @_optimize(none) — see Storage.handleSend workaround comment.
         // swift-linter:disable:next optimize suppression attribute
@@ -135,14 +135,14 @@
         ///
         /// - Parameter element: The element to send.
         ///
-        /// - Throws: `Async._Channel<Element>.Error.closed` if the channel is closed.
-        ///           `Async._Channel<Element>.Error.cancelled` if the task is cancelled.
+        /// - Throws: `Async.Channel<Element>.Error.closed` if the channel is closed.
+        ///           `Async.Channel<Element>.Error.cancelled` if the task is cancelled.
         @_optimize(none)
         @inlinable
         nonisolated(nonsending)
             public func send(
                 _ element: consuming sending Element
-            ) async throws(Async._Channel<Element>.Error)
+            ) async throws(Async.Channel<Element>.Error)
         {
             // Stage element in a Sendable Slot for lock-boundary transfer.
             // Ownership.Slot is @unchecked Sendable — capturing it in the withLock
@@ -161,7 +161,7 @@
             switch consume decision {
             case .deliverToReceiver(let receiverCont, let element):
                 _ = handle.storage.deliverySlot.store(element)
-                receiverCont.resume(returning: Async._Channel<Element>.Bounded.State.Receive.Signal.delivered)
+                receiverCont.resume(returning: Async.Channel<Element>.Bounded.State.Receive.Signal.delivered)
                 return
 
             case .buffered:
@@ -174,8 +174,8 @@
                 flag = sendFlag
             }
 
-            let error: Async._Channel<Element>.Error? = await withTaskCancellationHandler {
-                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async._Channel<Element>.Error?, Never>) in
+            let error: Async.Channel<Element>.Error? = await withTaskCancellationHandler {
+                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async.Channel<Element>.Error?, Never>) in
                     // Single continuation threaded through the action: `state.suspend`
                     // either enqueues it (suspended case) or hands it back inside
                     // the returned action, and `handleSend` resumes it from there.
@@ -183,11 +183,11 @@
                         state.suspend(flag: flag, slot: slot, continuation: unsafe Async.Continuation.Unsafe(raw))
                     }
 
-                    Async._Channel<Element>.Bounded.Storage.handleSend(consume action, storage: handle.storage)
+                    Async.Channel<Element>.Bounded.Storage.handleSend(consume action, storage: handle.storage)
                 }
             } onCancel: {
                 if flag.cancel() {
-                    var cancelled = Deque<Column.Ring<Async._Channel<Element>.Bounded.State.Send.Continuation>>()
+                    var cancelled = Deque<Column.Ring<Async.Channel<Element>.Bounded.State.Send.Continuation>>()
                     handle.storage.withLock { state in
                         cancelled = state.reap()
                     }
@@ -206,7 +206,7 @@
 
     // MARK: - Lifecycle
 
-    extension Async._Channel.Bounded.Sender where Element: ~Copyable {
+    extension Async.Channel.Bounded.Sender where Element: ~Copyable {
         /// Close the channel, signaling no more elements will be sent.
         ///
         /// **Hybrid forced/graceful semantics**:

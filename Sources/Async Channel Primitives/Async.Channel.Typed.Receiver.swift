@@ -9,17 +9,17 @@
 
 #if !hasFeature(Embedded)
 
-    extension Async._Channel.Typed where Element: ~Copyable, Failure: Swift.Error & Sendable {
+    extension Async.Channel.Typed where Element: ~Copyable, Failure: Swift.Error & Sendable {
         /// The single-consumer endpoint that receives elements and terminates senders.
         public struct Receiver: ~Copyable, Sendable {
-            @usableFromInline let raw: Async._Channel<Element>.Bounded.Receiver
-            @usableFromInline let closer: Async._Channel<Element>.Bounded.Sender
+            @usableFromInline let raw: Async.Channel<Element>.Bounded.Receiver
+            @usableFromInline let closer: Async.Channel<Element>.Bounded.Sender
             @usableFromInline let terminals: TerminalStorage
 
             @usableFromInline
             init(
-                raw: consuming Async._Channel<Element>.Bounded.Receiver,
-                closer: Async._Channel<Element>.Bounded.Sender,
+                raw: consuming Async.Channel<Element>.Bounded.Receiver,
+                closer: Async.Channel<Element>.Bounded.Sender,
                 terminals: TerminalStorage
             ) {
                 self.raw = raw
@@ -29,7 +29,7 @@
         }
     }
 
-    extension Async._Channel.Typed.Receiver where Element: ~Copyable, Failure: Swift.Error & Sendable {
+    extension Async.Channel.Typed.Receiver where Element: ~Copyable, Failure: Swift.Error & Sendable {
         /// Receives an element. Sender failure is reported only after buffered
         /// elements have drained; sender finish is reported as `nil`.
         public func receive() async throws(Error) -> sending Element? {

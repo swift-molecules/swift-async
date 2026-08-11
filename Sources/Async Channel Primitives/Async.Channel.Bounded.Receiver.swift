@@ -22,7 +22,7 @@
     import Buffer_Primitive
     public import Deque_Primitives
 
-    extension Async._Channel.Bounded where Element: ~Copyable {
+    extension Async.Channel.Bounded where Element: ~Copyable {
         /// A receiver handle for a bounded channel.
         ///
         /// `Receiver` enforces a single-suspended-receiver invariant: at most one
@@ -31,7 +31,7 @@
         ///
         /// ## Usage
         /// ```swift
-        /// var channel = Async._Channel<Int>.Bounded(capacity: 10)
+        /// var channel = Async.Channel<Int>.Bounded(capacity: 10)
         ///
         /// // Receive elements (may suspend if buffer empty)
         /// while let value = try await channel.receiver.receive() {
@@ -61,7 +61,7 @@
 
     // MARK: - Receive Operations
 
-    extension Async._Channel.Bounded.Receiver where Element: ~Copyable {
+    extension Async.Channel.Bounded.Receiver where Element: ~Copyable {
         // swiftlint:disable:next workaround_marker_present
         // WORKAROUND: @_optimize(none) prevents CopyPropagation ownership
         // verification crash on `switch consume` of ~Copyable enum in async context.
@@ -75,11 +75,11 @@
         /// or the channel is closed and drained.
         ///
         /// - Returns: The next element, or `nil` if the channel is closed and drained.
-        /// - Throws: `Async._Channel<Element>.Error.cancelled` if the task is cancelled.
+        /// - Throws: `Async.Channel<Element>.Error.cancelled` if the task is cancelled.
         @_optimize(none)
         @inlinable
         nonisolated(nonsending)
-            public func receive() async throws(Async._Channel<Element>.Error) -> sending Element?
+            public func receive() async throws(Async.Channel<Element>.Error) -> sending Element?
         {
             // Fast path: try immediate receive
             let fastAction = storage.withLock { state in
@@ -109,8 +109,8 @@
 
             // Slow path: need to suspend
             // Element delivery uses Ownership.Slot — continuation carries Signal only.
-            let signal: Async._Channel<Element>.Bounded.State.Receive.Signal = await withTaskCancellationHandler {
-                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async._Channel<Element>.Bounded.State.Receive.Signal, Never>) in
+            let signal: Async.Channel<Element>.Bounded.State.Receive.Signal = await withTaskCancellationHandler {
+                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async.Channel<Element>.Bounded.State.Receive.Signal, Never>) in
                     // A single continuation is threaded through the state machine:
                     // `state.suspend` either stores it (suspend case) or hands it
                     // back inside the returned action, and `handleReceive` resumes
@@ -118,7 +118,7 @@
                     let action = storage.withLock { state in
                         state.suspend(continuation: unsafe Async.Continuation.Unsafe(raw))
                     }
-                    Async._Channel<Element>.Bounded.Storage.handleReceive(consume action, storage: storage)
+                    Async.Channel<Element>.Bounded.Storage.handleReceive(consume action, storage: storage)
                 }
             } onCancel: {
                 let action = storage.withLock { state in
@@ -146,7 +146,7 @@
 
     // MARK: - Query
 
-    extension Async._Channel.Bounded.Receiver where Element: ~Copyable {
+    extension Async.Channel.Bounded.Receiver where Element: ~Copyable {
         /// Whether the channel has been closed.
         ///
         /// Note: Even when `true`, `receive()` may still return elements
@@ -158,7 +158,7 @@
 
     // MARK: - AsyncSequence View
 
-    extension Async._Channel.Bounded.Receiver {
+    extension Async.Channel.Bounded.Receiver {
         /// Returns an AsyncSequence view for iteration.
         ///
         /// Available only when `Element` is `Copyable` (required by `AsyncSequence`).
@@ -169,8 +169,8 @@
         ///     process(value)
         /// }
         /// ```
-        public var elements: Async._Channel<Element>.Bounded.Elements {
-            Async._Channel<Element>.Bounded.Elements(storage: storage)
+        public var elements: Async.Channel<Element>.Bounded.Elements {
+            Async.Channel<Element>.Bounded.Elements(storage: storage)
         }
     }
 
