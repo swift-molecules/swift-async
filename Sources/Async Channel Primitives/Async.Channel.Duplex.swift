@@ -50,6 +50,14 @@
                 Self(outbound: rightToLeft.sender, inbound: consume leftToRight.receiver)
             )
         }
+
+        /// Creates two peers connected by independent zero-capacity directions.
+        public static func pair() -> (
+            Async.Channel<Element>.Typed<Failure>.Rendezvous.Duplex,
+            Async.Channel<Element>.Typed<Failure>.Rendezvous.Duplex
+        ) {
+            Async.Channel<Element>.Typed<Failure>.Rendezvous.Duplex.pair()
+        }
     }
 
 #endif  // !hasFeature(Embedded)
