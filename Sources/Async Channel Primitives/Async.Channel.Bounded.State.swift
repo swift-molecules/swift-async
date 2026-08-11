@@ -23,7 +23,7 @@
     import Memory_Allocator_Primitive
     import Buffer_Primitive
 
-    extension Async.Channel.Bounded where Element: ~Copyable {
+    extension Async._Channel.Bounded where Element: ~Copyable {
         /// Pure state machine for bounded channel operations.
         ///
         /// This state machine contains no side effects. All operations return
@@ -60,7 +60,7 @@
 
     // MARK: - Status
 
-    extension Async.Channel.Bounded.State where Element: ~Copyable {
+    extension Async._Channel.Bounded.State where Element: ~Copyable {
         @usableFromInline
         enum Status: Sendable {
             /// Channel is open and operational.
@@ -76,7 +76,7 @@
 
     // MARK: - Sender
 
-    extension Async.Channel.Bounded.State where Element: ~Copyable {
+    extension Async._Channel.Bounded.State where Element: ~Copyable {
         // `~Copyable`: stores a `Send.Continuation` (now `~Copyable`), so the
         // container that owns it must be single-use too.
         @usableFromInline
@@ -103,7 +103,7 @@
 
     // MARK: - Receiver
 
-    extension Async.Channel.Bounded.State where Element: ~Copyable {
+    extension Async._Channel.Bounded.State where Element: ~Copyable {
         // `~Copyable`: stores a `Receive.Continuation` (now `~Copyable`).
         @usableFromInline
         struct Receiver: ~Copyable, Sendable {
@@ -119,7 +119,7 @@
 
     // MARK: - Sender Queue Helpers
 
-    extension Async.Channel.Bounded.State where Element: ~Copyable {
+    extension Async._Channel.Bounded.State where Element: ~Copyable {
         /// Pops the next non-cancelled sender from the queue.
         ///
         /// Flagged senders are skipped and their continuations collected into
@@ -144,17 +144,17 @@
 
     // MARK: - Send
 
-    extension Async.Channel.Bounded.State where Element: ~Copyable {
+    extension Async._Channel.Bounded.State where Element: ~Copyable {
         @usableFromInline
         enum Send {}
     }
 
-    extension Async.Channel.Bounded.State.Send where Element: ~Copyable {
+    extension Async._Channel.Bounded.State.Send where Element: ~Copyable {
         /// Continuation type for send operations.
         ///
         /// Returns nil on success, Error on failure.
         @usableFromInline
-        typealias Continuation = Async.Continuation<Async.Channel<Element>.Error?>.Unsafe
+        typealias Continuation = Async.Continuation<Async._Channel<Element>.Error?>.Unsafe
 
         /// Result of `send` — fast-path decision.
         ///
@@ -164,7 +164,7 @@
         enum Decision: ~Copyable {
             /// Deliver the element directly to a waiting receiver.
             /// Element was taken from the Optional inside send.
-            case deliverToReceiver(Async.Channel<Element>.Bounded.State.Receive.Continuation, Element)
+            case deliverToReceiver(Async._Channel<Element>.Bounded.State.Receive.Continuation, Element)
 
             /// Element was buffered successfully (taken from Optional).
             case buffered
@@ -190,23 +190,23 @@
             /// Deliver the element directly to a waiting receiver.
             /// `sender`: the suspending sender's continuation, handed back to
             /// be resumed outside the lock.
-            case deliverToReceiver(Async.Channel<Element>.Bounded.State.Receive.Continuation, Element, sender: Async.Channel<Element>.Bounded.State.Send.Continuation)
+            case deliverToReceiver(Async._Channel<Element>.Bounded.State.Receive.Continuation, Element, sender: Async._Channel<Element>.Bounded.State.Send.Continuation)
 
             /// Element was buffered successfully.
-            case buffered(sender: Async.Channel<Element>.Bounded.State.Send.Continuation)
+            case buffered(sender: Async._Channel<Element>.Bounded.State.Send.Continuation)
 
             /// Continuation stored, sender is now suspended.
             case suspended
 
             /// Channel is closed, reject the send.
-            case rejectClosed(sender: Async.Channel<Element>.Bounded.State.Send.Continuation)
+            case rejectClosed(sender: Async._Channel<Element>.Bounded.State.Send.Continuation)
 
             /// Sender was already cancelled before suspension.
-            case rejectCancelled(sender: Async.Channel<Element>.Bounded.State.Send.Continuation)
+            case rejectCancelled(sender: Async._Channel<Element>.Bounded.State.Send.Continuation)
         }
     }
 
-    extension Async.Channel.Bounded.State where Element: ~Copyable {
+    extension Async._Channel.Bounded.State where Element: ~Copyable {
         /// Attempt a synchronous send (non-blocking).
         ///
         /// The element is in the caller's `inout Element?`. On deliver/buffer
@@ -221,7 +221,7 @@
                 // continuation (the continuation is now `~Copyable`).
                 if let receiver = self.receiver.take() {
                     guard let taken = element.take() else {
-                        preconditionFailure("Async.Channel.Bounded.State.send(_:): element slot was empty")
+                        preconditionFailure("Async._Channel.Bounded.State.send(_:): element slot was empty")
                     }
                     return .deliverToReceiver(receiver.continuation, taken)
                 }
@@ -229,7 +229,7 @@
                 // If buffer has space, add to buffer
                 if buffer.count < capacity {
                     guard let taken = element.take() else {
-                        preconditionFailure("Async.Channel.Bounded.State.send(_:): element slot was empty")
+                        preconditionFailure("Async._Channel.Bounded.State.send(_:): element slot was empty")
                     }
                     buffer.push(taken, to: .back)
                     return .buffered
@@ -308,12 +308,12 @@
 
     // MARK: - Receive
 
-    extension Async.Channel.Bounded.State where Element: ~Copyable {
+    extension Async._Channel.Bounded.State where Element: ~Copyable {
         @usableFromInline
         enum Receive {}
     }
 
-    extension Async.Channel.Bounded.State.Receive where Element: ~Copyable {
+    extension Async._Channel.Bounded.State.Receive where Element: ~Copyable {
         /// Lightweight signal carried through the continuation.
         ///
         /// Element delivery happens via Ownership.Slot, not through the continuation.
@@ -345,30 +345,30 @@
             /// back to be resumed outside the lock.
             case returnElement(
                 Element,
-                resumeSender: Async.Channel<Element>.Bounded.State.Send.Continuation?,
-                cancelled: Deque<Column.Ring<Async.Channel<Element>.Bounded.State.Send.Continuation>>?,
-                receiver: Async.Channel<Element>.Bounded.State.Receive.Continuation?
+                resumeSender: Async._Channel<Element>.Bounded.State.Send.Continuation?,
+                cancelled: Deque<Column.Ring<Async._Channel<Element>.Bounded.State.Send.Continuation>>?,
+                receiver: Async._Channel<Element>.Bounded.State.Receive.Continuation?
             )
 
             /// Receiver must suspend and wait.
             case suspend
 
             /// Channel is closed and drained.
-            case returnNil(receiver: Async.Channel<Element>.Bounded.State.Receive.Continuation?)
+            case returnNil(receiver: Async._Channel<Element>.Bounded.State.Receive.Continuation?)
 
             /// Receiver was already cancelled before suspension.
-            case rejectCancelled(receiver: Async.Channel<Element>.Bounded.State.Receive.Continuation?)
+            case rejectCancelled(receiver: Async._Channel<Element>.Bounded.State.Receive.Continuation?)
         }
 
         // `~Copyable`: `.resumeWithCancellation` carries a `Receive.Continuation`.
         @usableFromInline
         enum Cancel: ~Copyable, Sendable {
-            case resumeWithCancellation(Async.Channel<Element>.Bounded.State.Receive.Continuation)
+            case resumeWithCancellation(Async._Channel<Element>.Bounded.State.Receive.Continuation)
             case none
         }
     }
 
-    extension Async.Channel.Bounded.State where Element: ~Copyable {
+    extension Async._Channel.Bounded.State where Element: ~Copyable {
         /// Attempt a synchronous receive (non-blocking).
         @usableFromInline
         mutating func receive() -> Receive.Action {
@@ -487,7 +487,7 @@
 
     // MARK: - Close
 
-    extension Async.Channel.Bounded.State where Element: ~Copyable {
+    extension Async._Channel.Bounded.State where Element: ~Copyable {
         @usableFromInline
         struct Close: ~Copyable, Sendable {
             // `var` (not `let`) so the caller can `take()` the continuation out
@@ -543,7 +543,7 @@
 
     // MARK: - Query
 
-    extension Async.Channel.Bounded.State where Element: ~Copyable {
+    extension Async._Channel.Bounded.State where Element: ~Copyable {
         @usableFromInline
         var isClosed: Bool {
             switch status {

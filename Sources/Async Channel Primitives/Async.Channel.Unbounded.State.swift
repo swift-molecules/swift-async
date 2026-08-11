@@ -22,7 +22,7 @@
     import Memory_Allocator_Primitive
     import Buffer_Primitive
 
-    extension Async.Channel.Unbounded where Element: ~Copyable {
+    extension Async._Channel.Unbounded where Element: ~Copyable {
         /// Pure state machine for unbounded channel operations.
         ///
         /// This state machine contains no side effects. All operations return
@@ -66,7 +66,7 @@
 
     // MARK: - Status
 
-    extension Async.Channel.Unbounded.State where Element: ~Copyable {
+    extension Async._Channel.Unbounded.State where Element: ~Copyable {
         @usableFromInline
         enum Status: Sendable {
             /// Channel is open and operational.
@@ -82,7 +82,7 @@
 
     // MARK: - Query
 
-    extension Async.Channel.Unbounded.State where Element: ~Copyable {
+    extension Async._Channel.Unbounded.State where Element: ~Copyable {
         @usableFromInline
         var isClosed: Bool {
             switch status {
@@ -97,21 +97,21 @@
 
     // MARK: - Send
 
-    extension Async.Channel.Unbounded.State where Element: ~Copyable {
+    extension Async._Channel.Unbounded.State where Element: ~Copyable {
         @usableFromInline
         enum Send {}
     }
 
-    extension Async.Channel.Unbounded.State.Send where Element: ~Copyable {
+    extension Async._Channel.Unbounded.State.Send where Element: ~Copyable {
         @usableFromInline
         enum Action: ~Copyable {
-            case give(Async.Channel<Element>.Unbounded.State.Receive.Continuation, Element)
+            case give(Async._Channel<Element>.Unbounded.State.Receive.Continuation, Element)
             case keep
             case shut
         }
     }
 
-    extension Async.Channel.Unbounded.State where Element: ~Copyable {
+    extension Async._Channel.Unbounded.State where Element: ~Copyable {
         /// Send an element to the channel.
         ///
         /// The element is in the caller's `inout Element?`. On deliver, it is
@@ -123,12 +123,12 @@
             case .open:
                 if let cont = waiter.take() {
                     guard let taken = element.take() else {
-                        preconditionFailure("Async.Channel.Unbounded.State.send(_:): element slot was empty")
+                        preconditionFailure("Async._Channel.Unbounded.State.send(_:): element slot was empty")
                     }
                     return .give(cont, taken)
                 }
                 guard let taken = element.take() else {
-                    preconditionFailure("Async.Channel.Unbounded.State.send(_:): element slot was empty")
+                    preconditionFailure("Async._Channel.Unbounded.State.send(_:): element slot was empty")
                 }
                 buffer.push(taken, to: .back)
                 return .keep
@@ -141,12 +141,12 @@
 
     // MARK: - Receive
 
-    extension Async.Channel.Unbounded.State where Element: ~Copyable {
+    extension Async._Channel.Unbounded.State where Element: ~Copyable {
         @usableFromInline
         enum Receive {}
     }
 
-    extension Async.Channel.Unbounded.State.Receive where Element: ~Copyable {
+    extension Async._Channel.Unbounded.State.Receive where Element: ~Copyable {
         /// Lightweight signal carried through the continuation.
         ///
         /// Element delivery happens via Ownership.Slot, not through the continuation.
@@ -172,21 +172,21 @@
         // `.wait` case stores the continuation in the slot instead.
         @usableFromInline
         enum Step: ~Copyable {
-            case val(Element, receiver: Async.Channel<Element>.Unbounded.State.Receive.Continuation?)
-            case end(receiver: Async.Channel<Element>.Unbounded.State.Receive.Continuation?)
+            case val(Element, receiver: Async._Channel<Element>.Unbounded.State.Receive.Continuation?)
+            case end(receiver: Async._Channel<Element>.Unbounded.State.Receive.Continuation?)
             case wait
-            case cancelled(receiver: Async.Channel<Element>.Unbounded.State.Receive.Continuation?)
+            case cancelled(receiver: Async._Channel<Element>.Unbounded.State.Receive.Continuation?)
         }
 
         // `~Copyable`: `.stop` carries a `Continuation` (now `~Copyable`).
         @usableFromInline
         enum Stop: ~Copyable, Sendable {
             case none
-            case stop(Async.Channel<Element>.Unbounded.State.Receive.Continuation)
+            case stop(Async._Channel<Element>.Unbounded.State.Receive.Continuation)
         }
     }
 
-    extension Async.Channel.Unbounded.State where Element: ~Copyable {
+    extension Async._Channel.Unbounded.State where Element: ~Copyable {
         /// Non-blocking receive: take from buffer if available.
         @usableFromInline
         mutating func poll() -> Element? {
@@ -243,7 +243,7 @@
 
     // MARK: - Close
 
-    extension Async.Channel.Unbounded.State where Element: ~Copyable {
+    extension Async._Channel.Unbounded.State where Element: ~Copyable {
         // `~Copyable`: `.end` carries a `Receive.Continuation` (now `~Copyable`).
         @usableFromInline
         enum Close: ~Copyable, Sendable {

@@ -204,7 +204,7 @@ extension Publication.Test.Performance {
         let iterations = 1_000
         let range = 0..<iterations
 
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         await withTaskGroup(of: Void.self) { group in
             // Publisher
@@ -255,7 +255,7 @@ extension Publication.Test.Performance {
         let iterationsPerActor = 100
         let totalRange = 0..<(publisherCount * iterationsPerActor)
 
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         await withTaskGroup(of: Void.self) { group in
             // Multiple publishers

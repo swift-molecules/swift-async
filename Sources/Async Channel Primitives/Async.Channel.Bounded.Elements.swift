@@ -12,7 +12,7 @@
 // Async channels require task suspension which is not available on embedded Swift.
 #if !hasFeature(Embedded)
 
-    extension Async.Channel.Bounded {
+    extension Async._Channel.Bounded {
         /// An AsyncSequence view over a bounded channel receiver.
         public struct Elements: AsyncSequence, Sendable {
             @usableFromInline
@@ -25,7 +25,7 @@
         }
     }
 
-    extension Async.Channel.Bounded.Elements {
+    extension Async._Channel.Bounded.Elements {
         /// Creates the async iterator used to drive `for await` loops over this view.
         public func makeAsyncIterator() -> Iterator {
             Iterator(storage: storage)

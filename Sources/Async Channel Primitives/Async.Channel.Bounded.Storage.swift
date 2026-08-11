@@ -22,7 +22,7 @@
     import Buffer_Primitive
     internal import Deque_Primitives
 
-    extension Async.Channel.Bounded where Element: ~Copyable {
+    extension Async._Channel.Bounded where Element: ~Copyable {
         /// Thread-safe storage wrapping the state machine.
         ///
         /// Uses `Ownership.Mutable.Unchecked` to give the channel reference semantics
@@ -47,9 +47,9 @@
         }
     }
 
-    extension Async.Channel.Bounded.Storage where Element: ~Copyable {
+    extension Async._Channel.Bounded.Storage where Element: ~Copyable {
         @inlinable
-        func withLock<T: ~Copyable, E: Swift.Error>(_ body: (inout sending Async.Channel<Element>.Bounded.State) throws(E) -> sending T) throws(E) -> sending T {
+        func withLock<T: ~Copyable, E: Swift.Error>(_ body: (inout sending Async._Channel<Element>.Bounded.State) throws(E) -> sending T) throws(E) -> sending T {
             try _storage.mutable.value.withLock(body)
         }
 
@@ -66,8 +66,8 @@
         @_optimize(none)
         @usableFromInline
         static func handleReceive(
-            _ action: consuming sending Async.Channel<Element>.Bounded.State.Receive.Action,
-            storage: Async.Channel<Element>.Bounded.Storage
+            _ action: consuming sending Async._Channel<Element>.Bounded.State.Receive.Action,
+            storage: Async._Channel<Element>.Bounded.Storage
         ) {
             // The receiver continuation rides inside the action (nil on the
             // fast path, present on the slow path); it is resumed from here.
@@ -100,15 +100,15 @@
         @_optimize(none)
         @usableFromInline
         static func handleSend(
-            _ action: consuming sending Async.Channel<Element>.Bounded.State.Send.Action,
-            storage: Async.Channel<Element>.Bounded.Storage
+            _ action: consuming sending Async._Channel<Element>.Bounded.State.Send.Action,
+            storage: Async._Channel<Element>.Bounded.Storage
         ) {
             // The sender continuation rides inside the action (except on the
             // `.suspended` path, where it was stored in the sender queue).
             switch consume action {
             case .deliverToReceiver(let receiverCont, let element, let sender):
                 _ = storage.deliverySlot.store(element)
-                receiverCont.resume(returning: Async.Channel<Element>.Bounded.State.Receive.Signal.delivered)
+                receiverCont.resume(returning: Async._Channel<Element>.Bounded.State.Receive.Signal.delivered)
                 sender.resume(returning: nil)
 
             case .buffered(let sender):

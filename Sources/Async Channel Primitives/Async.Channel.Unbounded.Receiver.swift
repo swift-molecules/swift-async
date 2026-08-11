@@ -21,7 +21,7 @@
     import Memory_Allocator_Primitive
     import Buffer_Primitive
 
-    extension Async.Channel.Unbounded where Element: ~Copyable {
+    extension Async._Channel.Unbounded where Element: ~Copyable {
         /// A receiver for an unbounded channel.
         ///
         /// `Receiver` is `~Copyable` (unique) and transferable across tasks.
@@ -33,7 +33,7 @@
         ///
         /// ## Usage
         /// ```swift
-        /// var channel = Async.Channel<Int>.Unbounded()
+        /// var channel = Async._Channel<Int>.Unbounded()
         ///
         /// // Receive elements (may suspend if buffer empty)
         /// while let value = try await channel.receiver.receive() {
@@ -63,7 +63,7 @@
 
     // MARK: - Receive Operations
 
-    extension Async.Channel.Unbounded.Receiver where Element: ~Copyable {
+    extension Async._Channel.Unbounded.Receiver where Element: ~Copyable {
         // swiftlint:disable:next workaround_marker_present
         // WORKAROUND: @_optimize(none) — see Unbounded.Storage.handleReceive workaround comment.
         // swift-linter:disable:next optimize suppression attribute
@@ -78,11 +78,11 @@
         ///   elements that entered via the sender's `consuming sending` can exit across an
         ///   isolation boundary — the receiver-side half of [MEM-SEND-010]
         ///   (proven additively in swift-memory-foreign-primitives/Experiments/foreign-recycle-channel).
-        /// - Throws: `Async.Channel<Element>.Error.cancelled` if the task is cancelled.
+        /// - Throws: `Async._Channel<Element>.Error.cancelled` if the task is cancelled.
         @_optimize(none)
         @inlinable
         nonisolated(nonsending)
-            public func receive() async throws(Async.Channel<Element>.Error) -> sending Element?
+            public func receive() async throws(Async._Channel<Element>.Error) -> sending Element?
         {
             // Fast path: try immediate receive
             let fastAction = storage.withLock { state in
@@ -110,8 +110,8 @@
 
             // Slow path: need to suspend
             // Element delivery uses Ownership.Slot — continuation carries Signal only.
-            let signal: Async.Channel<Element>.Unbounded.State.Receive.Signal = await withTaskCancellationHandler {
-                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async.Channel<Element>.Unbounded.State.Receive.Signal, Never>) in
+            let signal: Async._Channel<Element>.Unbounded.State.Receive.Signal = await withTaskCancellationHandler {
+                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async._Channel<Element>.Unbounded.State.Receive.Signal, Never>) in
                     // Single continuation threaded through the step: `state.wait`
                     // either stores it (wait path) or hands it back inside the
                     // returned step, and `handleReceive` resumes it from there.
@@ -119,7 +119,7 @@
                         state.wait(unsafe Async.Continuation.Unsafe(raw))
                     }
 
-                    Async.Channel<Element>.Unbounded.Storage.handleReceive(consume action, storage: storage)
+                    Async._Channel<Element>.Unbounded.Storage.handleReceive(consume action, storage: storage)
                 }
             } onCancel: {
                 // Extract continuation under lock, resume outside
@@ -163,7 +163,7 @@
 
     // MARK: - Query
 
-    extension Async.Channel.Unbounded.Receiver where Element: ~Copyable {
+    extension Async._Channel.Unbounded.Receiver where Element: ~Copyable {
         /// Whether the channel has been closed.
         ///
         /// Returns true when no further elements can be enqueued.
@@ -178,7 +178,7 @@
 
     // MARK: - AsyncSequence View
 
-    extension Async.Channel.Unbounded.Receiver {
+    extension Async._Channel.Unbounded.Receiver {
         /// Returns an AsyncSequence view for iteration.
         ///
         /// Available only when `Element` is `Copyable` (required by `AsyncSequence`).
@@ -189,8 +189,8 @@
         ///     process(value)
         /// }
         /// ```
-        public var elements: Async.Channel<Element>.Unbounded.Elements {
-            Async.Channel<Element>.Unbounded.Elements(storage: storage)
+        public var elements: Async._Channel<Element>.Unbounded.Elements {
+            Async._Channel<Element>.Unbounded.Elements(storage: storage)
         }
     }
 

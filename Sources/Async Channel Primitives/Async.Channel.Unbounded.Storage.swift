@@ -21,7 +21,7 @@
     import Memory_Allocator_Primitive
     import Buffer_Primitive
 
-    extension Async.Channel.Unbounded where Element: ~Copyable {
+    extension Async._Channel.Unbounded where Element: ~Copyable {
         /// Thread-safe storage wrapping the state machine.
         @usableFromInline
         final class Storage: Sendable {
@@ -56,9 +56,9 @@
         }
     }
 
-    extension Async.Channel.Unbounded.Storage where Element: ~Copyable {
+    extension Async._Channel.Unbounded.Storage where Element: ~Copyable {
         @inlinable
-        func withLock<T: ~Copyable, E: Swift.Error>(_ body: (inout sending Async.Channel<Element>.Unbounded.State) throws(E) -> sending T) throws(E) -> sending T {
+        func withLock<T: ~Copyable, E: Swift.Error>(_ body: (inout sending Async._Channel<Element>.Unbounded.State) throws(E) -> sending T) throws(E) -> sending T {
             try mutex.withLock(body)
         }
 
@@ -75,8 +75,8 @@
         @_optimize(none)
         @usableFromInline
         static func handleReceive(
-            _ action: consuming sending Async.Channel<Element>.Unbounded.State.Receive.Step,
-            storage: Async.Channel<Element>.Unbounded.Storage
+            _ action: consuming sending Async._Channel<Element>.Unbounded.State.Receive.Step,
+            storage: Async._Channel<Element>.Unbounded.Storage
         ) {
             // The receiver continuation rides inside the step (nil on the fast
             // path, present on the slow path); it is resumed from here. The

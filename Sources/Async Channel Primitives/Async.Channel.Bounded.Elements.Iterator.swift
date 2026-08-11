@@ -21,20 +21,20 @@
     import Buffer_Primitive
     public import Deque_Primitives
 
-    extension Async.Channel.Bounded.Elements {
+    extension Async._Channel.Bounded.Elements {
         /// Iterator for the AsyncSequence view.
         public struct Iterator: AsyncIteratorProtocol, Sendable {
             @usableFromInline
-            let storage: Async.Channel<Element>.Bounded.Storage
+            let storage: Async._Channel<Element>.Bounded.Storage
 
             @usableFromInline
-            init(storage: Async.Channel<Element>.Bounded.Storage) {
+            init(storage: Async._Channel<Element>.Bounded.Storage) {
                 self.storage = storage
             }
         }
     }
 
-    extension Async.Channel.Bounded.Elements.Iterator {
+    extension Async._Channel.Bounded.Elements.Iterator {
         // swiftlint:disable:next workaround_marker_present
         // WORKAROUND: @_optimize(none) — see Storage.handle workaround comment.
         // swift-linter:disable:next optimize suppression attribute
@@ -42,11 +42,11 @@
         /// Advances to the next element, suspending if the buffer is empty.
         ///
         /// - Returns: The next element, or `nil` if the channel is closed and drained.
-        /// - Throws: `Async.Channel<Element>.Error.cancelled` if the task is cancelled.
+        /// - Throws: `Async._Channel<Element>.Error.cancelled` if the task is cancelled.
         @_optimize(none)
         @inlinable
         nonisolated(nonsending)
-            public mutating func next() async throws(Async.Channel<Element>.Error) -> Element?
+            public mutating func next() async throws(Async._Channel<Element>.Error) -> Element?
         {
             // Capture storage to avoid capturing self in @Sendable closure
             let storage = self.storage
@@ -77,15 +77,15 @@
             }
 
             // Slow path: need to suspend
-            let signal: Async.Channel<Element>.Bounded.State.Receive.Signal = await withTaskCancellationHandler {
-                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async.Channel<Element>.Bounded.State.Receive.Signal, Never>) in
+            let signal: Async._Channel<Element>.Bounded.State.Receive.Signal = await withTaskCancellationHandler {
+                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async._Channel<Element>.Bounded.State.Receive.Signal, Never>) in
                     // Single continuation threaded through the action (see the
                     // Receiver.receive() note): stored on the suspend path,
                     // handed back and resumed by handleReceive otherwise.
                     let action = storage.withLock { state in
                         state.suspend(continuation: unsafe Async.Continuation.Unsafe(raw))
                     }
-                    Async.Channel<Element>.Bounded.Storage.handleReceive(consume action, storage: storage)
+                    Async._Channel<Element>.Bounded.Storage.handleReceive(consume action, storage: storage)
                 }
             } onCancel: {
                 let action = storage.withLock { state in

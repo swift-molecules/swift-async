@@ -17,7 +17,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Send and receive single element`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         try ends.sender.send(42)
         ends.close()
@@ -27,23 +27,23 @@ struct UnboundedChannelTests {
 
     @Test
     func `Send succeeds when channel is open`() throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         try ends.sender.send(42)
         ends.close()
     }
 
     @Test
     func `Closed channel rejects send`() {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         ends.close()
-        #expect(throws: Async.Channel<Int>.Error.closed) {
+        #expect(throws: Async._Channel<Int>.Error.closed) {
             try ends.sender.send(42)
         }
     }
 
     @Test
     func `Receive returns nil after close and drain`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         try ends.sender.send(1)
         try ends.sender.send(2)
@@ -60,14 +60,14 @@ struct UnboundedChannelTests {
 
     @Test
     func `Poll returns nil when empty`() {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let result = ends.receiver.poll()
         #expect(result == nil)
     }
 
     @Test
     func `Poll returns element when available`() throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         try ends.sender.send(42)
         let result = ends.receiver.poll()
@@ -76,7 +76,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Send batch elements`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         try ends.sender.send(contentsOf: [1, 2, 3])
         ends.close()
@@ -90,7 +90,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `closed reflects state`() {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         #expect(ends.sender.closed == false)
         #expect(ends.receiver.closed == false)
@@ -101,7 +101,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Receive suspends until element available`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let started = Async.Barrier(parties: 2)
 
         // Use elements for Task (Elements is Sendable)
@@ -128,7 +128,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Receive resumes with nil on close`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let started = Async.Barrier(parties: 2)
 
         let elements = ends.receiver.elements
@@ -154,7 +154,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Multiple producers can send concurrently`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let sender = ends.sender
         let count = 100
 
@@ -184,7 +184,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Cancellation throws cancelled error`() async {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let started = Async.Barrier(parties: 2)
 
         let elements = ends.receiver.elements
@@ -205,7 +205,7 @@ struct UnboundedChannelTests {
         do {
             _ = try await receiveTask.value
             Issue.record("Expected cancellation error")
-        } catch let error as Async.Channel<Int>.Error {
+        } catch let error as Async._Channel<Int>.Error {
             #expect(error == .cancelled)
         } catch {
             Issue.record("Unexpected error type: \(error)")
@@ -214,7 +214,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Close with buffered elements drains then returns nil`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         // Buffer elements
         try ends.sender.send(1)
@@ -240,7 +240,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Sender copies share storage`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let sender1 = ends.sender
         let sender2 = sender1  // Copy
 
@@ -263,7 +263,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Sender copies compare equal by endpoint identity`() {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let sender = ends.sender
         let copy = sender
 
@@ -272,15 +272,15 @@ struct UnboundedChannelTests {
 
     @Test
     func `Senders from distinct channels compare unequal`() {
-        let first = Async.Channel<Int>.Unbounded().take().ends()
-        let second = Async.Channel<Int>.Unbounded().take().ends()
+        let first = Async._Channel<Int>.Unbounded().take().ends()
+        let second = Async._Channel<Int>.Unbounded().take().ends()
 
         #expect(first.sender != second.sender)
     }
 
     @Test
     func `Sender equality remains stable after close`() {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let sender = ends.sender
         let copy = sender
 
@@ -296,7 +296,7 @@ struct UnboundedChannelTests {
             let payload: Payload
         }
 
-        let ends = Async.Channel<Parcel>.Unbounded().take().ends()
+        let ends = Async._Channel<Parcel>.Unbounded().take().ends()
         let sender = ends.sender
         let copy = sender
 
@@ -305,7 +305,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Direct delivery when receiver waiting`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let started = Async.Barrier(parties: 2)
 
         let elements = ends.receiver.elements
@@ -335,7 +335,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `AsyncSequence iteration`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         try ends.sender.send(contentsOf: [1, 2, 3])
         ends.close()
@@ -350,7 +350,7 @@ struct UnboundedChannelTests {
 
     @Test
     func `Poll does not affect suspension state`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let started = Async.Barrier(parties: 2)
         let sender = ends.sender
 
@@ -400,7 +400,7 @@ struct UnboundedChannelTests {
             }
         }
 
-        let ends = Async.Channel<Parcel>.Unbounded().take().ends()
+        let ends = Async._Channel<Parcel>.Unbounded().take().ends()
         try ends.sender.send(Parcel(payload: Payload(value: 99)))
         ends.sender.close()
         guard let parcel = try await ends.receiver.receive() else {

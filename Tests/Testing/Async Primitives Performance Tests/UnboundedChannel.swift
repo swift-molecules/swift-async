@@ -31,7 +31,7 @@ extension Benchmark.UnboundedChannel {
     /// First element delivered to waiting receiver, rest buffered.
     @Test(.timed(iterations: 10, warmup: 2))
     func `1000 batch send`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let elements = Array(0..<Benchmark.iterations)
 
         try ends.sender.send(contentsOf: elements)
@@ -47,7 +47,7 @@ extension Benchmark.UnboundedChannel {
     /// Baseline for comparison with batch send.
     @Test(.timed(iterations: 10, warmup: 2))
     func `1000 per-element send`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         for i in 0..<Benchmark.iterations {
             try ends.sender.send(i)
@@ -67,7 +67,7 @@ extension Benchmark.UnboundedChannel {
     /// Concurrent producer/consumer round-trips (single element).
     @Test(.timed(iterations: 10, warmup: 2))
     func `1000 round-trips`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
 
         let producer = Task.detached {
             for i in 0..<Benchmark.iterations {
@@ -86,7 +86,7 @@ extension Benchmark.UnboundedChannel {
     /// Concurrent batch send with receiver.
     @Test(.timed(iterations: 10, warmup: 2))
     func `1000 batch round-trips`() async throws {
-        let ends = Async.Channel<Int>.Unbounded().take().ends()
+        let ends = Async._Channel<Int>.Unbounded().take().ends()
         let started = Async.Barrier(parties: 2)
 
         let receiver = Task {
