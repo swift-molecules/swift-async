@@ -34,7 +34,8 @@ extension Queue_Primitives.Queue where S: ~Copyable {
     /// - Returns: The first eligible entry, or `nil` if none found.
     @inlinable
     public mutating func popEligible<Outcome: Sendable, Metadata: ~Copyable & Sendable>(
-        flaggedInto flagged: inout Queue_Primitives.Queue<Async.Waiter.Queue.Flagged<Outcome, Metadata>>
+        flaggedInto flagged:
+            inout Queue_Primitives.Queue<Async.Waiter.Queue.Flagged<Outcome, Metadata>>
     ) -> S.Element? where S == Column.Ring<Async.Waiter.Entry<Outcome, Metadata>> {
         while !isEmpty {
             guard let entry = dequeue() else { break }
@@ -127,7 +128,8 @@ extension Queue_Primitives.Queue where S: ~Copyable {
     /// - Returns: The first eligible entry, or `nil` if none found.
     @inlinable
     public mutating func popEligible<Outcome: Sendable, Metadata: ~Copyable & Sendable>(
-        flaggedInto flagged: inout Queue_Primitives.Queue<Async.Waiter.Queue.Flagged<Outcome, Metadata>>
+        flaggedInto flagged:
+            inout Queue_Primitives.Queue<Async.Waiter.Queue.Flagged<Outcome, Metadata>>
     ) -> S.Element? where S == Column.Ring<Async.Waiter.Entry<Outcome, Metadata>>.Bounded {
         while !isEmpty {
             guard let entry = dequeue() else { break }

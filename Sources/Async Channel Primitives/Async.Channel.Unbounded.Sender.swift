@@ -86,7 +86,8 @@
         /// - Throws: `Async.Channel<Element>.Error.closed` if the channel is closed.
         @_optimize(none)
         @inlinable
-        public func send(_ element: consuming sending Element) throws(Async.Channel<Element>.Error) {
+        public func send(_ element: consuming sending Element) throws(Async.Channel<Element>.Error)
+        {
             let slot = Ownership.Slot(consume element)
             let action = storage.withLock { state in
                 var opt: Element? = slot.take()
@@ -100,7 +101,9 @@
             switch consume action {
             case .give(let cont, let element):
                 _ = storage.deliverySlot.store(element)
-                cont.resume(returning: Async.Channel<Element>.Unbounded.State.Receive.Signal.delivered)
+                cont.resume(
+                    returning: Async.Channel<Element>.Unbounded.State.Receive.Signal.delivered
+                )
 
             case .keep:
                 break
@@ -119,13 +122,16 @@
         /// - Parameter elements: The elements to send.
         /// - Throws: `Async.Channel<Element>.Error.closed` if the channel is closed.
         @inlinable
-        public func send<S: Swift.Sequence>(contentsOf elements: sending S) throws(Async.Channel<Element>.Error) where S.Element == Element {
+        public func send<S: Swift.Sequence>(
+            contentsOf elements: sending S
+        ) throws(Async.Channel<Element>.Error) where S.Element == Element {
             let elementSlot = Ownership.Slot(Array(elements))
             let deliverySlot = storage.deliverySlot
             // A tuple cannot hold the now-`~Copyable` continuation, so `Pair`
             // (which is `~Copyable` when a component is) stands in for
             // `(cont:closed:)`: `.first` = continuation, `.second` = closed.
-            var outcome = storage.withLock { state -> Pair<Async.Channel<Element>.Unbounded.State.Receive.Continuation?, Bool> in
+            var outcome = storage.withLock {
+                state -> Pair<Async.Channel<Element>.Unbounded.State.Receive.Continuation?, Bool> in
                 guard let batch = elementSlot.take() else { return Pair(nil, false) }
                 var receiverCont: Async.Channel<Element>.Unbounded.State.Receive.Continuation? = nil
                 var delivered = false
@@ -146,7 +152,9 @@
                         // only other elements.
                         var staged: Element? = element
                         guard let handoff = staged.take() else {
-                            preconditionFailure("Async.Channel.Unbounded.Sender.send(contentsOf:): staged element vanished")
+                            preconditionFailure(
+                                "Async.Channel.Unbounded.Sender.send(contentsOf:): staged element vanished"
+                            )
                         }
                         _ = deliverySlot.store(handoff)
                         receiverCont = consume cont
@@ -159,7 +167,9 @@
             }
 
             if let cont = outcome.first.take() {
-                cont.resume(returning: Async.Channel<Element>.Unbounded.State.Receive.Signal.delivered)
+                cont.resume(
+                    returning: Async.Channel<Element>.Unbounded.State.Receive.Signal.delivered
+                )
             }
             if outcome.second { throw .closed }
         }

@@ -28,6 +28,9 @@ extension Async {
 // MARK: - Resolution
 
 extension Async.Precedence {
+    // The four outcomes correspond one-to-one with the three precedence flags
+    // and the success fallback; grouping them would obscure this API contract.
+    // swiftlint:disable function_parameter_count
     /// Resolves competing conditions into a single outcome using standard precedence.
     ///
     /// ## Precedence Order
@@ -75,4 +78,5 @@ extension Async.Precedence {
         if timedOut { return onTimeout() }
         return success()
     }
+    // swiftlint:enable function_parameter_count
 }

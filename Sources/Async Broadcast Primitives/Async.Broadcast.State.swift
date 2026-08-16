@@ -69,7 +69,8 @@
             subscriber subscriberID: UInt64,
             token: UInt64
         ) -> CheckedContinuation<Async.Broadcast<Element>.Next.Outcome, Never>? {
-            let cleared = subscribers.withMutableValue(forKey: subscriberID) { subscriber -> CheckedContinuation<Async.Broadcast<Element>.Next.Outcome, Never>? in
+            let cleared = subscribers.withMutableValue(forKey: subscriberID) {
+                subscriber -> CheckedContinuation<Async.Broadcast<Element>.Next.Outcome, Never>? in
                 // Token matching: only clear if our token matches
                 guard subscriber.wait.token == token,
                     let cont = subscriber.continuation

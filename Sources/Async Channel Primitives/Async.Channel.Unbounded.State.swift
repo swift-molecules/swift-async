@@ -123,12 +123,16 @@
             case .open:
                 if let cont = waiter.take() {
                     guard let taken = element.take() else {
-                        preconditionFailure("Async.Channel.Unbounded.State.send(_:): element slot was empty")
+                        preconditionFailure(
+                            "Async.Channel.Unbounded.State.send(_:): element slot was empty"
+                        )
                     }
                     return .give(cont, taken)
                 }
                 guard let taken = element.take() else {
-                    preconditionFailure("Async.Channel.Unbounded.State.send(_:): element slot was empty")
+                    preconditionFailure(
+                        "Async.Channel.Unbounded.State.send(_:): element slot was empty"
+                    )
                 }
                 buffer.push(taken, to: .back)
                 return .keep
@@ -172,7 +176,10 @@
         // `.wait` case stores the continuation in the slot instead.
         @usableFromInline
         enum Step: ~Copyable {
-            case val(Element, receiver: Async.Channel<Element>.Unbounded.State.Receive.Continuation?)
+            case val(
+                Element,
+                receiver: Async.Channel<Element>.Unbounded.State.Receive.Continuation?
+            )
             case end(receiver: Async.Channel<Element>.Unbounded.State.Receive.Continuation?)
             case wait
             case cancelled(receiver: Async.Channel<Element>.Unbounded.State.Receive.Continuation?)

@@ -70,7 +70,9 @@
             var slot: V? = value
             return try withLock { (state: inout sending Value) throws(E) -> T in
                 guard let value = slot.take() else {
-                    preconditionFailure("Async.Mutex.withLock(consuming:body:): value slot was empty")
+                    preconditionFailure(
+                        "Async.Mutex.withLock(consuming:body:): value slot was empty"
+                    )
                 }
                 return try body(&state, value)
             }

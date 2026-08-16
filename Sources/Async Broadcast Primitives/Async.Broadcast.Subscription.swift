@@ -39,7 +39,11 @@
     extension Async.Broadcast.Subscription: AsyncSequence {
         /// Creates the async iterator used to drive `for await` loops over this subscription.
         public func makeAsyncIterator() -> AsyncIterator {
-            AsyncIterator(broadcast: broadcast, id: id, publication: Async.Publication<Async.Broadcast<Element>.Wait>())
+            AsyncIterator(
+                broadcast: broadcast,
+                id: id,
+                publication: Async.Publication<Async.Broadcast<Element>.Wait>()
+            )
         }
     }
 
@@ -48,10 +52,14 @@
     extension Async.Broadcast.Subscription {
         /// Unsubscribe and release resources.
         public func cancel() {
-            let continuationToCancel: CheckedContinuation<Async.Broadcast<Element>.Next.Outcome, Never>? = broadcast._state.withLock { state in
-                guard let subscriber = state.subscribers.removeValue(forKey: id) else { return nil }
-                return subscriber.continuation
-            }
+            let continuationToCancel:
+                CheckedContinuation<Async.Broadcast<Element>.Next.Outcome, Never>? = broadcast
+                    ._state.withLock { state in
+                        guard let subscriber = state.subscribers.removeValue(forKey: id) else {
+                            return nil
+                        }
+                        return subscriber.continuation
+                    }
             continuationToCancel?.resume(returning: .finished)
         }
     }

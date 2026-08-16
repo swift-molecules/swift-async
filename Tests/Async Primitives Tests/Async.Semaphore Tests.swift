@@ -271,7 +271,9 @@ extension Async.Semaphore.Test.`Edge Case` {
     // the outcome deterministic regardless of the scheduler race, so a
     // fixed implementation passes on every iteration.
     @Test
-    func `wait from an already-cancelled task resolves promptly instead of hanging forever`() async throws {
+    func `wait from an already-cancelled task resolves promptly instead of hanging forever`()
+        async throws
+    {
         for _ in 0..<30 {
             let semaphore = Async.Semaphore(capacity: 1)
             try await semaphore.wait()  // hold the only permit so a further wait() must suspend
@@ -303,7 +305,10 @@ extension Async.Semaphore.Test.`Edge Case` {
                 try? await Task.sleep(for: .milliseconds(10))
             }
 
-            #expect(observedCompletion, "an already-cancelled task's wait() must not suspend indefinitely")
+            #expect(
+                observedCompletion,
+                "an already-cancelled task's wait() must not suspend indefinitely"
+            )
             if !observedCompletion {
                 break  // one reproduction is enough; avoid piling up hung tasks
             }
@@ -319,7 +324,9 @@ extension Async.Semaphore.Test.`Edge Case` {
     // varying points in that window — including, some of the time, inside
     // it.
     @Test
-    func `cancelling between handler installation and suspension does not orphan the waiter`() async throws {
+    func `cancelling between handler installation and suspension does not orphan the waiter`()
+        async throws
+    {
         for _ in 0..<30 {
             let semaphore = Async.Semaphore(capacity: 1)
             try await semaphore.wait()  // hold the only permit so wait() must suspend

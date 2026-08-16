@@ -23,7 +23,10 @@ extension Async.Waiter.Queue {
 
         /// Creates a flagged entry from its reason and the removed waiter entry.
         @inlinable
-        public init(reason: Async.Waiter.Flag.Reason, entry: consuming Async.Waiter.Entry<Outcome, Metadata>) {
+        public init(
+            reason: Async.Waiter.Flag.Reason,
+            entry: consuming Async.Waiter.Entry<Outcome, Metadata>
+        ) {
             self.reason = reason
             self.entry = entry
         }
@@ -39,7 +42,10 @@ extension Async.Waiter.Queue {
 
             /// Creates a split value from its reason and entry.
             @inlinable
-            public init(reason: Async.Waiter.Flag.Reason, entry: consuming Async.Waiter.Entry<Outcome, Metadata>) {
+            public init(
+                reason: Async.Waiter.Flag.Reason,
+                entry: consuming Async.Waiter.Entry<Outcome, Metadata>
+            ) {
                 self.reason = reason
                 self.entry = entry
             }

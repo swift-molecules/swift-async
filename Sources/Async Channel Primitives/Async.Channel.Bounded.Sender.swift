@@ -161,7 +161,9 @@
             switch consume decision {
             case .deliverToReceiver(let receiverCont, let element):
                 _ = handle.storage.deliverySlot.store(element)
-                receiverCont.resume(returning: Async.Channel<Element>.Bounded.State.Receive.Signal.delivered)
+                receiverCont.resume(
+                    returning: Async.Channel<Element>.Bounded.State.Receive.Signal.delivered
+                )
                 return
 
             case .buffered:
@@ -175,19 +177,29 @@
             }
 
             let error: Async.Channel<Element>.Error? = await withTaskCancellationHandler {
-                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async.Channel<Element>.Error?, Never>) in
+                await unsafe withUnsafeContinuation {
+                    (raw: UnsafeContinuation<Async.Channel<Element>.Error?, Never>) in
                     // Single continuation threaded through the action: `state.suspend`
                     // either enqueues it (suspended case) or hands it back inside
                     // the returned action, and `handleSend` resumes it from there.
                     let action = handle.storage.withLock { state in
-                        state.suspend(flag: flag, slot: slot, continuation: unsafe Async.Continuation.Unsafe(raw))
+                        state.suspend(
+                            flag: flag,
+                            slot: slot,
+                            continuation: unsafe Async.Continuation.Unsafe(raw)
+                        )
                     }
 
-                    Async.Channel<Element>.Bounded.Storage.handleSend(consume action, storage: handle.storage)
+                    Async.Channel<Element>.Bounded.Storage.handleSend(
+                        consume action,
+                        storage: handle.storage
+                    )
                 }
             } onCancel: {
                 if flag.cancel() {
-                    var cancelled = Deque<Column.Ring<Async.Channel<Element>.Bounded.State.Send.Continuation>>()
+                    var cancelled = Deque<
+                        Column.Ring<Async.Channel<Element>.Bounded.State.Send.Continuation>
+                    >()
                     handle.storage.withLock { state in
                         cancelled = state.reap()
                     }

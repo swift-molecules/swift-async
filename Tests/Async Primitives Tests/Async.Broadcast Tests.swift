@@ -333,7 +333,10 @@
                                 )
                                 return (index, received, true)  // cancelled
                             } catch {
-                                #expect(Bool(false), "Round \(round), subscriber \(index): Unexpected error: \(error)")
+                                #expect(
+                                    Bool(false),
+                                    "Round \(round), subscriber \(index): Unexpected error: \(error)"
+                                )
                                 break
                             }
                         }
@@ -452,7 +455,8 @@
             let elementCount = 500
             let broadcast = Async.Broadcast<Int>(bufferCapacity: elementCount)
 
-            let results = Async.Channel<(id: Int, elements: [Int], terminatedViaCancellation: Bool)>.Unbounded().take().ends()
+            let results = Async.Channel<(id: Int, elements: [Int], terminatedViaCancellation: Bool)>
+                .Unbounded().take().ends()
 
             var subscriberTasks: [(id: Int, task: Task<Void, Never>)] = []
 
@@ -480,12 +484,22 @@
                             break loop
                         } catch {
                             // Unexpected error type - this IS a test failure
-                            #expect(Bool(false), "Subscriber \(id): Unexpected error type: \(error)")
+                            #expect(
+                                Bool(false),
+                                "Subscriber \(id): Unexpected error type: \(error)"
+                            )
                             break loop
                         }
                     }
 
-                    do { try sender.send((id: id, elements: received, terminatedViaCancellation: terminatedViaCancellation)) } catch { #expect(Bool(false), "results channel unexpectedly closed") }
+                    do {
+                        try sender.send(
+                            (
+                                id: id, elements: received,
+                                terminatedViaCancellation: terminatedViaCancellation
+                            )
+                        )
+                    } catch { #expect(Bool(false), "results channel unexpectedly closed") }
                 }
                 subscriberTasks.append((id: id, task: task))
             }
@@ -679,7 +693,10 @@
     @Suite("Broadcast")
     struct Tests {
         @Test
-        func `send trims the replay buffer to bufferLimit behind a stalled subscriber, which observes loss`() async throws {
+        func
+            `send trims the replay buffer to bufferLimit behind a stalled subscriber, which observes loss`()
+            async throws
+        {
             // F-002 (option a): the documented contract is that `buffer.limit`
             // is the replay window and a subscriber that falls behind it
             // observes loss (Async.Broadcast's "Delivery Guarantees" doc).
@@ -720,7 +737,10 @@
         // at module scope with this one).
 
         @Test
-        func `Loss fires with a positive dropped count when a lagging subscriber's cursor is advanced past drops`() async throws {
+        func
+            `Loss fires with a positive dropped count when a lagging subscriber's cursor is advanced past drops`()
+            async throws
+        {
             let bufferLimit = 4
             let recorder = LossRecorder()
             let broadcast = Async.Broadcast<Int>(bufferCapacity: bufferLimit) { loss in
@@ -757,7 +777,10 @@
             // repetition:
             #expect(!losses.isEmpty, "Expected at least one Loss signal for the stalled subscriber")
             for loss in losses {
-                #expect(loss.droppedCount > 0, "droppedCount must be positive — this signal only fires on genuine lag")
+                #expect(
+                    loss.droppedCount > 0,
+                    "droppedCount must be positive — this signal only fires on genuine lag"
+                )
                 #expect(loss.reason == .capacityLimit)
             }
             // The final loss event must be consistent with where the
@@ -793,11 +816,17 @@
             }
 
             #expect(received == Array(0..<10))
-            #expect(recorder.events.isEmpty, "No subscriber lagged behind the (never-trimmed) buffer; Loss must not fire")
+            #expect(
+                recorder.events.isEmpty,
+                "No subscriber lagged behind the (never-trimmed) buffer; Loss must not fire"
+            )
         }
 
         @Test
-        func `Loss does not fire for a subscriber that joins late, since replay from the current window is not loss`() async throws {
+        func
+            `Loss does not fire for a subscriber that joins late, since replay from the current window is not loss`()
+            async throws
+        {
             let bufferLimit = 4
             let recorder = LossRecorder()
             let broadcast = Async.Broadcast<Int>(bufferCapacity: bufferLimit) { loss in
@@ -868,7 +897,10 @@
             // recorded signals — a broadcast-level aggregate that only
             // reports one of the two lagging subscribers (or merges them)
             // would fail this.
-            #expect(subscriberIDs.count == 2, "Expected loss events for exactly 2 distinct lagging subscribers, got \(subscriberIDs)")
+            #expect(
+                subscriberIDs.count == 2,
+                "Expected loss events for exactly 2 distinct lagging subscribers, got \(subscriberIDs)"
+            )
             for id in subscriberIDs {
                 let idLosses = losses.filter { $0.subscriberID == id }
                 #expect(!idLosses.isEmpty)
@@ -880,7 +912,10 @@
         }
 
         @Test
-        func `Broadcast without an onLoss handler behaves exactly as before, and Loss.Reason equality holds`() async throws {
+        func
+            `Broadcast without an onLoss handler behaves exactly as before, and Loss.Reason equality holds`()
+            async throws
+        {
             // Non-breaking proof at the unit level: omitting `onLoss` entirely
             // (the pre-existing initializer call shape) must compile and
             // behave identically to before this change.

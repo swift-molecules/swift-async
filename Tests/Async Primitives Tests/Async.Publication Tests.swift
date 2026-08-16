@@ -145,7 +145,10 @@ extension Publication.Test.Performance {
 
             // Exactly one winner
             let winners = results.compactMap { $0 }
-            #expect(winners.count == 1, "Expected exactly 1 winner, got \(winners.count) in round \(round)")
+            #expect(
+                winners.count == 1,
+                "Expected exactly 1 winner, got \(winners.count) in round \(round)"
+            )
 
             // Winner got the correct value
             #expect(winners.first == publishedValue)
@@ -347,7 +350,10 @@ extension Publication.Test.Performance {
 
             // Exactly one path should have claimed the token
             let claimers = result.filter { !$0.hasSuffix(":lost") }
-            #expect(claimers.count == 1, "Expected exactly 1 claimer, got \(claimers.count) in round \(round): \(result)")
+            #expect(
+                claimers.count == 1,
+                "Expected exactly 1 claimer, got \(claimers.count) in round \(round): \(result)"
+            )
 
             // The claimed token must be correct
             if let winner = claimers.first {

@@ -32,7 +32,8 @@ extension Async.Semaphore {
     ///
     /// Shutdown is idempotent: calling it multiple times is harmless.
     public func shutdown() {
-        let resumptions: Async.Waiter.Queue.Drain<Async.Waiter.Resumption> = _state.withLock { state in
+        let resumptions: Async.Waiter.Queue.Drain<Async.Waiter.Resumption> = _state.withLock {
+            state in
             // Begin shutdown (idempotent)
             guard state.lifecycle.shutdown.begin() else {
                 return Async.Waiter.Queue.Drain<Async.Waiter.Resumption>()

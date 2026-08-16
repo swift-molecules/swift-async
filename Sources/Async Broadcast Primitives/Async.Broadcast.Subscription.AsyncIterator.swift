@@ -55,41 +55,47 @@
             let result: Async.Broadcast<Element>.Next.Outcome = await withTaskCancellationHandler {
                 await withCheckedContinuation { continuation in
                     // Single lock acquisition: returns immediate result OR installed wait token
-                    let (immediateResult, installedWait): (Async.Broadcast<Element>.Next.Outcome?, Async.Broadcast<Element>.Wait?) = broadcast._state.withLock { state in
-                        let resolved = state.subscribers.withMutableValue(forKey: id) { subscriber -> (Async.Broadcast<Element>.Next.Outcome?, Async.Broadcast<Element>.Wait?) in
-                            // Check for buffered element
-                            let cursor = subscriber.cursor
-                            var buffered: Element? = nil
-                            state.buffer.forEach { entry in
-                                if buffered == nil, entry.index == cursor {
-                                    buffered = entry.element
+                    let (immediateResult, installedWait):
+                        (Async.Broadcast<Element>.Next.Outcome?, Async.Broadcast<Element>.Wait?) =
+                            broadcast._state.withLock { state in
+                                let resolved = state.subscribers.withMutableValue(forKey: id) {
+                                    subscriber -> (
+                                        Async.Broadcast<Element>.Next.Outcome?,
+                                        Async.Broadcast<Element>.Wait?
+                                    ) in
+                                    // Check for buffered element
+                                    let cursor = subscriber.cursor
+                                    var buffered: Element? = nil
+                                    state.buffer.forEach { entry in
+                                        if buffered == nil, entry.index == cursor {
+                                            buffered = entry.element
+                                        }
+                                    }
+                                    if let element = buffered {
+                                        subscriber.cursor += 1
+                                        return (.element(element), nil)
+                                    }
+
+                                    // Check if finished
+                                    if state.is == .finished {
+                                        return (.finished, nil)
+                                    }
+
+                                    // Must suspend - allocate token
+                                    // Precondition: no concurrent next() on same subscription
+                                    precondition(
+                                        subscriber.continuation == nil,
+                                        "Broadcast: concurrent next() calls on same subscription"
+                                    )
+                                    subscriber.wait.token &+= 1
+                                    let token = subscriber.wait.token
+                                    subscriber.continuation = continuation
+                                    return (nil, Async.Broadcast<Element>.Wait(token: token))
                                 }
-                            }
-                            if let element = buffered {
-                                subscriber.cursor += 1
-                                return (.element(element), nil)
-                            }
 
-                            // Check if finished
-                            if state.is == .finished {
-                                return (.finished, nil)
+                                // Absent key: the subscription was cancelled.
+                                return resolved ?? (.finished, nil)
                             }
-
-                            // Must suspend - allocate token
-                            // Precondition: no concurrent next() on same subscription
-                            precondition(
-                                subscriber.continuation == nil,
-                                "Broadcast: concurrent next() calls on same subscription"
-                            )
-                            subscriber.wait.token &+= 1
-                            let token = subscriber.wait.token
-                            subscriber.continuation = continuation
-                            return (nil, Async.Broadcast<Element>.Wait(token: token))
-                        }
-
-                        // Absent key: the subscription was cancelled.
-                        return resolved ?? (.finished, nil)
-                    }
 
                     if let result = immediateResult {
                         continuation.resume(returning: result)

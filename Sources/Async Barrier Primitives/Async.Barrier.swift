@@ -237,7 +237,8 @@
             let flag = Async.Waiter.Flag()
 
             let outcome: Outcome = await withTaskCancellationHandler {
-                await withCheckedContinuation { (continuation: CheckedContinuation<Outcome, Never>) in
+                await withCheckedContinuation {
+                    (continuation: CheckedContinuation<Outcome, Never>) in
                     let action: SuspendAction = _state.withLock { state in
                         if state.released {
                             return .resumeImmediately(.success(()))
@@ -369,7 +370,11 @@
 
         enum SuspendAction: Sendable {
             case resumeImmediately(Outcome)
-            case release(others: [WaiterEntry], callbacks: [@Sendable () -> Void], mineOutcome: Outcome)
+            case release(
+                others: [WaiterEntry],
+                callbacks: [@Sendable () -> Void],
+                mineOutcome: Outcome
+            )
             case suspended(id: UInt64)
         }
 

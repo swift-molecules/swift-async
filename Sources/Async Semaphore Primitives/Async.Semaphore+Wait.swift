@@ -325,7 +325,8 @@
         @usableFromInline
         func pumpWaiters() {
             // Collect resumptions under lock, return them for execution outside
-            var pending: Async.Waiter.Queue.Drain<Async.Waiter.Resumption> = _state.withLock { state in
+            var pending: Async.Waiter.Queue.Drain<Async.Waiter.Resumption> = _state.withLock {
+                state in
                 let currentLifecycle = state.lifecycle
 
                 var flagged = Async.Waiter.Queue.Drain<
