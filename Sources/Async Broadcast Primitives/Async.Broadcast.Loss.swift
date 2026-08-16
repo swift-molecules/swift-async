@@ -96,7 +96,12 @@
             ///   - resumingAtIndex: The index the cursor was advanced to.
             ///   - reason: Why the loss occurred.
             @inlinable
-            public init(subscriberID: UInt64, droppedCount: Int, resumingAtIndex: UInt64, reason: Reason) {
+            public init(
+                subscriberID: UInt64,
+                droppedCount: Int,
+                resumingAtIndex: UInt64,
+                reason: Reason
+            ) {
                 self.subscriberID = subscriberID
                 self.droppedCount = droppedCount
                 self.resumingAtIndex = resumingAtIndex

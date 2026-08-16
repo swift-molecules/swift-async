@@ -125,7 +125,10 @@
             ///     exactly. See ``Loss`` for the firing site and threading/isolation
             ///     contract.
             public init(bufferCapacity: Int = 64, onLoss: (@Sendable (Loss) -> Void)? = nil) {
-                precondition(bufferCapacity > 0, "Broadcast buffer capacity must be greater than zero")
+                precondition(
+                    bufferCapacity > 0,
+                    "Broadcast buffer capacity must be greater than zero"
+                )
                 self.buffer = Buffer(limit: .init(Cardinal(UInt(bufferCapacity))))
                 self._state = Async.Mutex(State())
                 self.onLoss = onLoss
@@ -242,7 +245,8 @@
         /// - All pending receives return remaining buffered elements, then `nil`
         /// - Future `send()` calls are silently ignored
         public func finish() {
-            let continuationsToResume: [CheckedContinuation<Next.Outcome, Never>] = _state.withLock { state in
+            let continuationsToResume: [CheckedContinuation<Next.Outcome, Never>] = _state.withLock
+            { state in
                 state.is = .finished
 
                 // Find subscribers to finish (forEach avoids key snapshot heap allocation)
@@ -297,7 +301,10 @@
                 state.subscriber.seed += 1
                 let id = state.subscriber.seed
                 let cursor = state.next.index
-                state.subscribers.insert(key: id, value: Subscriber(cursor: cursor, continuation: nil))
+                state.subscribers.insert(
+                    key: id,
+                    value: Subscriber(cursor: cursor, continuation: nil)
+                )
                 return id
             }
             return Subscription(broadcast: self, id: id)

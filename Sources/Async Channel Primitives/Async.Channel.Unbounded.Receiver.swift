@@ -110,31 +110,40 @@
 
             // Slow path: need to suspend
             // Element delivery uses Ownership.Slot — continuation carries Signal only.
-            let signal: Async.Channel<Element>.Unbounded.State.Receive.Signal = await withTaskCancellationHandler {
-                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async.Channel<Element>.Unbounded.State.Receive.Signal, Never>) in
-                    // Single continuation threaded through the step: `state.wait`
-                    // either stores it (wait path) or hands it back inside the
-                    // returned step, and `handleReceive` resumes it from there.
-                    let action = storage.withLock { state in
-                        state.wait(unsafe Async.Continuation.Unsafe(raw))
+            let signal: Async.Channel<Element>.Unbounded.State.Receive.Signal =
+                await withTaskCancellationHandler {
+                    await unsafe withUnsafeContinuation {
+                        (
+                            raw: UnsafeContinuation<
+                                Async.Channel<Element>.Unbounded.State.Receive.Signal, Never
+                            >
+                        ) in
+                        // Single continuation threaded through the step: `state.wait`
+                        // either stores it (wait path) or hands it back inside the
+                        // returned step, and `handleReceive` resumes it from there.
+                        let action = storage.withLock { state in
+                            state.wait(unsafe Async.Continuation.Unsafe(raw))
+                        }
+
+                        Async.Channel<Element>.Unbounded.Storage.handleReceive(
+                            consume action,
+                            storage: storage
+                        )
+                    }
+                } onCancel: {
+                    // Extract continuation under lock, resume outside
+                    let stopAction = storage.withLock { state in
+                        state.stop()
                     }
 
-                    Async.Channel<Element>.Unbounded.Storage.handleReceive(consume action, storage: storage)
-                }
-            } onCancel: {
-                // Extract continuation under lock, resume outside
-                let stopAction = storage.withLock { state in
-                    state.stop()
-                }
+                    switch consume stopAction {
+                    case .stop(let cont):
+                        cont.resume(returning: .cancelled)
 
-                switch consume stopAction {
-                case .stop(let cont):
-                    cont.resume(returning: .cancelled)
-
-                case .none:
-                    break
+                    case .none:
+                        break
+                    }
                 }
-            }
 
             switch signal {
             case .delivered: return storage.deliverySlot.take()

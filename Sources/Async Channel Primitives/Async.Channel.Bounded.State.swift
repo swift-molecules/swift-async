@@ -164,7 +164,10 @@
         enum Decision: ~Copyable {
             /// Deliver the element directly to a waiting receiver.
             /// Element was taken from the Optional inside send.
-            case deliverToReceiver(Async.Channel<Element>.Bounded.State.Receive.Continuation, Element)
+            case deliverToReceiver(
+                Async.Channel<Element>.Bounded.State.Receive.Continuation,
+                Element
+            )
 
             /// Element was buffered successfully (taken from Optional).
             case buffered
@@ -190,7 +193,11 @@
             /// Deliver the element directly to a waiting receiver.
             /// `sender`: the suspending sender's continuation, handed back to
             /// be resumed outside the lock.
-            case deliverToReceiver(Async.Channel<Element>.Bounded.State.Receive.Continuation, Element, sender: Async.Channel<Element>.Bounded.State.Send.Continuation)
+            case deliverToReceiver(
+                Async.Channel<Element>.Bounded.State.Receive.Continuation,
+                Element,
+                sender: Async.Channel<Element>.Bounded.State.Send.Continuation
+            )
 
             /// Element was buffered successfully.
             case buffered(sender: Async.Channel<Element>.Bounded.State.Send.Continuation)
@@ -221,7 +228,9 @@
                 // continuation (the continuation is now `~Copyable`).
                 if let receiver = self.receiver.take() {
                     guard let taken = element.take() else {
-                        preconditionFailure("Async.Channel.Bounded.State.send(_:): element slot was empty")
+                        preconditionFailure(
+                            "Async.Channel.Bounded.State.send(_:): element slot was empty"
+                        )
                     }
                     return .deliverToReceiver(receiver.continuation, taken)
                 }
@@ -229,7 +238,9 @@
                 // If buffer has space, add to buffer
                 if buffer.count < capacity {
                     guard let taken = element.take() else {
-                        preconditionFailure("Async.Channel.Bounded.State.send(_:): element slot was empty")
+                        preconditionFailure(
+                            "Async.Channel.Bounded.State.send(_:): element slot was empty"
+                        )
                     }
                     buffer.push(taken, to: .back)
                     return .buffered
@@ -346,7 +357,9 @@
             case returnElement(
                 Element,
                 resumeSender: Async.Channel<Element>.Bounded.State.Send.Continuation?,
-                cancelled: Deque<Column.Ring<Async.Channel<Element>.Bounded.State.Send.Continuation>>?,
+                cancelled: Deque<
+                    Column.Ring<Async.Channel<Element>.Bounded.State.Send.Continuation>
+                >?,
                 receiver: Async.Channel<Element>.Bounded.State.Receive.Continuation?
             )
 
@@ -357,7 +370,9 @@
             case returnNil(receiver: Async.Channel<Element>.Bounded.State.Receive.Continuation?)
 
             /// Receiver was already cancelled before suspension.
-            case rejectCancelled(receiver: Async.Channel<Element>.Bounded.State.Receive.Continuation?)
+            case rejectCancelled(
+                receiver: Async.Channel<Element>.Bounded.State.Receive.Continuation?
+            )
         }
 
         // `~Copyable`: `.resumeWithCancellation` carries a `Receive.Continuation`.
@@ -385,14 +400,29 @@
                     // Wake up a waiting sender if any (skipping cancelled)
                     if let sender = next(collectingCancelledInto: &cancelled) {
                         buffer.push(sender.slot.take(__unchecked: ()), to: .back)
-                        return .returnElement(element, resumeSender: sender.continuation, cancelled: cancelled, receiver: nil)
+                        return .returnElement(
+                            element,
+                            resumeSender: sender.continuation,
+                            cancelled: cancelled,
+                            receiver: nil
+                        )
                     }
-                    return .returnElement(element, resumeSender: nil, cancelled: cancelled, receiver: nil)
+                    return .returnElement(
+                        element,
+                        resumeSender: nil,
+                        cancelled: cancelled,
+                        receiver: nil
+                    )
                 }
 
                 // If there are waiting senders, take directly from them (skipping cancelled)
                 if let sender = next(collectingCancelledInto: &cancelled) {
-                    return .returnElement(sender.slot.take(__unchecked: ()), resumeSender: sender.continuation, cancelled: cancelled, receiver: nil)
+                    return .returnElement(
+                        sender.slot.take(__unchecked: ()),
+                        resumeSender: sender.continuation,
+                        cancelled: cancelled,
+                        receiver: nil
+                    )
                 }
 
                 // Nothing available, would need to suspend
@@ -439,13 +469,28 @@
                 if let element = buffer.take(from: .front) {
                     if let sender = next(collectingCancelledInto: &cancelled) {
                         buffer.push(sender.slot.take(__unchecked: ()), to: .back)
-                        return .returnElement(element, resumeSender: sender.continuation, cancelled: cancelled, receiver: continuation)
+                        return .returnElement(
+                            element,
+                            resumeSender: sender.continuation,
+                            cancelled: cancelled,
+                            receiver: continuation
+                        )
                     }
-                    return .returnElement(element, resumeSender: nil, cancelled: cancelled, receiver: continuation)
+                    return .returnElement(
+                        element,
+                        resumeSender: nil,
+                        cancelled: cancelled,
+                        receiver: continuation
+                    )
                 }
 
                 if let sender = next(collectingCancelledInto: &cancelled) {
-                    return .returnElement(sender.slot.take(__unchecked: ()), resumeSender: sender.continuation, cancelled: cancelled, receiver: continuation)
+                    return .returnElement(
+                        sender.slot.take(__unchecked: ()),
+                        resumeSender: sender.continuation,
+                        cancelled: cancelled,
+                        receiver: continuation
+                    )
                 }
 
                 // Store receiver
@@ -457,7 +502,12 @@
                     if buffer.isEmpty {
                         status = .finished
                     }
-                    return .returnElement(element, resumeSender: nil, cancelled: nil, receiver: continuation)
+                    return .returnElement(
+                        element,
+                        resumeSender: nil,
+                        cancelled: nil,
+                        receiver: continuation
+                    )
                 }
                 status = .finished
                 return .returnNil(receiver: continuation)

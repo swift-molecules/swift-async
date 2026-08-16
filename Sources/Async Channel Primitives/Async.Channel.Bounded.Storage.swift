@@ -49,7 +49,9 @@
 
     extension Async.Channel.Bounded.Storage where Element: ~Copyable {
         @inlinable
-        func withLock<T: ~Copyable, E: Swift.Error>(_ body: (inout sending Async.Channel<Element>.Bounded.State) throws(E) -> sending T) throws(E) -> sending T {
+        func withLock<T: ~Copyable, E: Swift.Error>(
+            _ body: (inout sending Async.Channel<Element>.Bounded.State) throws(E) -> sending T
+        ) throws(E) -> sending T {
             try _storage.mutable.value.withLock(body)
         }
 
@@ -108,7 +110,9 @@
             switch consume action {
             case .deliverToReceiver(let receiverCont, let element, let sender):
                 _ = storage.deliverySlot.store(element)
-                receiverCont.resume(returning: Async.Channel<Element>.Bounded.State.Receive.Signal.delivered)
+                receiverCont.resume(
+                    returning: Async.Channel<Element>.Bounded.State.Receive.Signal.delivered
+                )
                 sender.resume(returning: nil)
 
             case .buffered(let sender):

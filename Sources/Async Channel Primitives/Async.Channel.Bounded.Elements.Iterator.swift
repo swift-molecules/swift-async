@@ -77,28 +77,37 @@
             }
 
             // Slow path: need to suspend
-            let signal: Async.Channel<Element>.Bounded.State.Receive.Signal = await withTaskCancellationHandler {
-                await unsafe withUnsafeContinuation { (raw: UnsafeContinuation<Async.Channel<Element>.Bounded.State.Receive.Signal, Never>) in
-                    // Single continuation threaded through the action (see the
-                    // Receiver.receive() note): stored on the suspend path,
-                    // handed back and resumed by handleReceive otherwise.
-                    let action = storage.withLock { state in
-                        state.suspend(continuation: unsafe Async.Continuation.Unsafe(raw))
+            let signal: Async.Channel<Element>.Bounded.State.Receive.Signal =
+                await withTaskCancellationHandler {
+                    await unsafe withUnsafeContinuation {
+                        (
+                            raw: UnsafeContinuation<
+                                Async.Channel<Element>.Bounded.State.Receive.Signal, Never
+                            >
+                        ) in
+                        // Single continuation threaded through the action (see the
+                        // Receiver.receive() note): stored on the suspend path,
+                        // handed back and resumed by handleReceive otherwise.
+                        let action = storage.withLock { state in
+                            state.suspend(continuation: unsafe Async.Continuation.Unsafe(raw))
+                        }
+                        Async.Channel<Element>.Bounded.Storage.handleReceive(
+                            consume action,
+                            storage: storage
+                        )
                     }
-                    Async.Channel<Element>.Bounded.Storage.handleReceive(consume action, storage: storage)
-                }
-            } onCancel: {
-                let action = storage.withLock { state in
-                    state.cancel()
-                }
-                switch consume action {
-                case .resumeWithCancellation(let continuation):
-                    continuation.resume(returning: .cancelled)
+                } onCancel: {
+                    let action = storage.withLock { state in
+                        state.cancel()
+                    }
+                    switch consume action {
+                    case .resumeWithCancellation(let continuation):
+                        continuation.resume(returning: .cancelled)
 
-                case .none:
-                    break
+                    case .none:
+                        break
+                    }
                 }
-            }
 
             switch signal {
             case .delivered: return storage.deliverySlot.take()

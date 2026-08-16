@@ -42,8 +42,6 @@ extension Async.Cancellation {
             var machine: Async.Cancellation.State = .active
             var nextIdentifier: UInt64 = 0
             var handlers: [UInt64: @Sendable () -> Void] = [:]
-
-            init() {}
         }
 
         let _state: Async.Mutex<_State>

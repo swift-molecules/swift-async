@@ -381,7 +381,9 @@ struct UnboundedChannelTests {
     }
 
     @Test
-    func `Non-Sendable element exits receive() across an isolation boundary (sending result)`() async throws {
+    func `Non-Sendable element exits receive() across an isolation boundary (sending result)`()
+        async throws
+    {
         // The receiver-side half of [MEM-SEND-010]: send() takes `consuming sending`,
         // and receive()'s `sending` result lets a non-Sendable element leave the
         // channel into another isolation domain. Proven additively in

@@ -58,7 +58,9 @@
 
     extension Async.Channel.Unbounded.Storage where Element: ~Copyable {
         @inlinable
-        func withLock<T: ~Copyable, E: Swift.Error>(_ body: (inout sending Async.Channel<Element>.Unbounded.State) throws(E) -> sending T) throws(E) -> sending T {
+        func withLock<T: ~Copyable, E: Swift.Error>(
+            _ body: (inout sending Async.Channel<Element>.Unbounded.State) throws(E) -> sending T
+        ) throws(E) -> sending T {
             try mutex.withLock(body)
         }
 

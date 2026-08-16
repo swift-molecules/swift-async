@@ -42,7 +42,9 @@
             ///           `.cancelled` if the task was cancelled.
             @_optimize(none)
             @inlinable
-            public func immediate(_ element: consuming sending Element) throws(Async.Channel<Element>.Error) {
+            public func immediate(
+                _ element: consuming sending Element
+            ) throws(Async.Channel<Element>.Error) {
                 let slot = Ownership.Slot(consume element)
                 let decision = handle.storage.withLock { state in
                     var opt: Element? = slot.take()
@@ -56,7 +58,9 @@
                 switch consume decision {
                 case .deliverToReceiver(let receiverCont, let element):
                     _ = handle.storage.deliverySlot.store(element)
-                    receiverCont.resume(returning: Async.Channel<Element>.Bounded.State.Receive.Signal.delivered)
+                    receiverCont.resume(
+                        returning: Async.Channel<Element>.Bounded.State.Receive.Signal.delivered
+                    )
 
                 case .buffered:
                     break
