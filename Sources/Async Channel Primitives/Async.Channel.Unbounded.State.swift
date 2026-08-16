@@ -114,26 +114,18 @@
     extension Async.Channel.Unbounded.State where Element: ~Copyable {
         /// Send an element to the channel.
         ///
-        /// The element is in the caller's `inout Element?`. On deliver, it is
+        /// The element is in the provided `Ownership.Slot`. On deliver, it is
         /// taken and returned in the action. On buffer, it is taken and pushed.
-        /// On shut, it remains in the Optional (cleaned up by deinit).
+        /// On shut, it remains in the slot (cleaned up by deinit).
         @usableFromInline
-        mutating func send(_ element: inout Element?) -> Send.Action {
+        mutating func send(_ slot: Ownership.Slot<Element>) -> Send.Action {
             switch status {
             case .open:
                 if let cont = waiter.take() {
-                    guard let taken = element.take() else {
-                        preconditionFailure(
-                            "Async.Channel.Unbounded.State.send(_:): element slot was empty"
-                        )
-                    }
+                    let taken = slot.take(__unchecked: ())
                     return .give(cont, taken)
                 }
-                guard let taken = element.take() else {
-                    preconditionFailure(
-                        "Async.Channel.Unbounded.State.send(_:): element slot was empty"
-                    )
-                }
+                let taken = slot.take(__unchecked: ())
                 buffer.push(taken, to: .back)
                 return .keep
 

@@ -149,12 +149,7 @@
             // closure avoids region merge that inout Element? would cause.
             let slot = Ownership.Slot(consume element)
             let decision = handle.storage.withLock { state in
-                var opt: Element? = slot.take()
-                let d = state.send(&opt)
-                if let remaining = opt.take() {
-                    _ = slot.store(remaining)
-                }
-                return d
+                state.send(slot)
             }
 
             let flag: Async.Waiter.Flag

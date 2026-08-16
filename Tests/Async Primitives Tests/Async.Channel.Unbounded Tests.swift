@@ -78,7 +78,9 @@ struct UnboundedChannelTests {
     func `Send batch elements`() async throws {
         let ends = Async.Channel<Int>.Unbounded().take().ends()
 
-        try ends.sender.send(contentsOf: [1, 2, 3])
+        try ends.sender.send(
+            contentsOf: [Ownership.Slot(1), Ownership.Slot(2), Ownership.Slot(3)]
+        )
         ends.close()
 
         var received: [Int] = []
@@ -337,7 +339,9 @@ struct UnboundedChannelTests {
     func `AsyncSequence iteration`() async throws {
         let ends = Async.Channel<Int>.Unbounded().take().ends()
 
-        try ends.sender.send(contentsOf: [1, 2, 3])
+        try ends.sender.send(
+            contentsOf: [Ownership.Slot(1), Ownership.Slot(2), Ownership.Slot(3)]
+        )
         ends.close()
 
         var received: [Int] = []
