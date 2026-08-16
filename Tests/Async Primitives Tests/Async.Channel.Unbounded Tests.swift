@@ -10,6 +10,7 @@
 // ===----------------------------------------------------------------------===//
 
 import Async_Primitives_Test_Support
+import Ownership_Slot_Primitives
 import Testing
 
 @Suite

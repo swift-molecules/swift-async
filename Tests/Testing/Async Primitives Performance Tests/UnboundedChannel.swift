@@ -13,6 +13,7 @@
 // concurrent round-trips. Exercises single-lock batch optimization (P-4).
 
 import Async_Primitives
+import Ownership_Slot_Primitives
 import Testing
 
 // MARK: - Unbounded Channel
