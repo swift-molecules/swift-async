@@ -90,12 +90,7 @@
         {
             let slot = Ownership.Slot(consume element)
             let action = storage.withLock { state in
-                var opt: Element? = slot.take()
-                let a = state.send(&opt)
-                if let remaining = opt.take() {
-                    _ = slot.store(remaining)
-                }
-                return a
+                state.send(slot)
             }
 
             switch consume action {
@@ -113,54 +108,40 @@
             }
         }
 
-        /// Send multiple elements to the channel.
+        /// Send multiple independently transferred elements to the channel.
         ///
         /// All elements are processed under a single lock acquisition.
         /// If a receiver is waiting, the first element is delivered directly
         /// and the rest are buffered.
         ///
-        /// - Parameter elements: The elements to send.
+        /// Each slot establishes a separate transfer boundary. A sequence of
+        /// bare elements is insufficient because its elements may alias one
+        /// another even when the sequence itself is transferred.
+        ///
+        /// - Parameter slots: Nonempty slots containing the elements to send.
         /// - Throws: `Async.Channel<Element>.Error.closed` if the channel is closed.
+        /// - Precondition: Every slot is nonempty and appears only once.
         @inlinable
         public func send<S: Swift.Sequence>(
-            contentsOf elements: sending S
-        ) throws(Async.Channel<Element>.Error) where S.Element == Element {
-            let elementSlot = Ownership.Slot(Array(elements))
+            contentsOf slots: sending S
+        ) throws(Async.Channel<Element>.Error) where S.Element == Ownership.Slot<Element> {
+            let batch = Array(slots)
             let deliverySlot = storage.deliverySlot
             // A tuple cannot hold the now-`~Copyable` continuation, so `Pair`
             // (which is `~Copyable` when a component is) stands in for
             // `(cont:closed:)`: `.first` = continuation, `.second` = closed.
             var outcome = storage.withLock {
                 state -> Pair<Async.Channel<Element>.Unbounded.State.Receive.Continuation?, Bool> in
-                guard let batch = elementSlot.take() else { return Pair(nil, false) }
                 var receiverCont: Async.Channel<Element>.Unbounded.State.Receive.Continuation? = nil
                 var delivered = false
-                for element in batch {
+                for slot in batch {
                     guard !state.isClosed else { return Pair(receiverCont, true) }
                     if !delivered, let cont = state.waiter.take() {
-                        // `store` is `sending` (ownership-primitives e94d7c9)
-                        // and RegionIsolation cannot split one element's
-                        // region out of `batch` (later iterations still use
-                        // it), so the loop copy cannot be sent directly.
-                        // Stage it through an Optional and extract via
-                        // `take()`, whose `sending` return hands back a
-                        // disconnected value — the same shape `State.send`'s
-                        // `element.take()` path uses one function above. The
-                        // hand-off is sound: this iteration's element goes to
-                        // exactly one receiver via the delivery slot and is
-                        // never buffer-pushed; remaining `batch` uses touch
-                        // only other elements.
-                        var staged: Element? = element
-                        guard let handoff = staged.take() else {
-                            preconditionFailure(
-                                "Async.Channel.Unbounded.Sender.send(contentsOf:): staged element vanished"
-                            )
-                        }
-                        _ = deliverySlot.store(handoff)
+                        _ = deliverySlot.store(slot.take(__unchecked: ()))
                         receiverCont = consume cont
                         delivered = true
                     } else {
-                        state.buffer.push(element, to: .back)
+                        state.buffer.push(slot.take(__unchecked: ()), to: .back)
                     }
                 }
                 return Pair(receiverCont, false)

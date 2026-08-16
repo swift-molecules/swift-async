@@ -13,6 +13,7 @@
 // concurrent round-trips. Exercises single-lock batch optimization (P-4).
 
 import Async_Primitives
+import Ownership_Slot_Primitives
 import Testing
 
 // MARK: - Unbounded Channel
@@ -34,7 +35,7 @@ extension Benchmark.UnboundedChannel {
         let ends = Async.Channel<Int>.Unbounded().take().ends()
         let elements = Array(0..<Benchmark.iterations)
 
-        try ends.sender.send(contentsOf: elements)
+        try ends.sender.send(contentsOf: elements.map { Ownership.Slot($0) })
         ends.close()
 
         var count = 0
@@ -98,7 +99,7 @@ extension Benchmark.UnboundedChannel {
 
         await started.arrive()
         let elements = Array(0..<Benchmark.iterations)
-        try ends.sender.send(contentsOf: elements)
+        try ends.sender.send(contentsOf: elements.map { Ownership.Slot($0) })
         ends.close()
 
         let count = try await receiver.value

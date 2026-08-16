@@ -158,29 +158,29 @@
 
         /// Result of `send` — fast-path decision.
         ///
-        /// Element is handled via the caller's `inout Element?`: taken on
-        /// deliver/buffer paths, left in Optional on suspend/reject.
+        /// Element is handled via the caller's `Ownership.Slot`: taken on
+        /// deliver/buffer paths, left in the slot on suspend/reject.
         @usableFromInline
         enum Decision: ~Copyable {
             /// Deliver the element directly to a waiting receiver.
-            /// Element was taken from the Optional inside send.
+            /// Element was taken from the slot inside send.
             case deliverToReceiver(
                 Async.Channel<Element>.Bounded.State.Receive.Continuation,
                 Element
             )
 
-            /// Element was buffered successfully (taken from Optional).
+            /// Element was buffered successfully (taken from the slot).
             case buffered
 
             /// Sender must suspend and wait.
             ///
-            /// Element remains in the caller's Optional. The flag is pre-created
+            /// Element remains in the caller's slot. The flag is pre-created
             /// for cancellation signaling (shared between queue entry and
             /// onCancel handler).
             case suspend(flag: Async.Waiter.Flag)
 
             /// Channel is closed, reject the send.
-            /// Element remains in the caller's Optional (cleaned up by deinit).
+            /// Element remains in the caller's slot (cleaned up by deinit).
             case rejectClosed
         }
 
@@ -216,37 +216,29 @@
     extension Async.Channel.Bounded.State where Element: ~Copyable {
         /// Attempt a synchronous send (non-blocking).
         ///
-        /// The element is in the caller's `inout Element?`. On deliver/buffer
-        /// paths it is taken from the Optional. On suspend/reject, the element
-        /// remains in the Optional for the caller to handle.
+        /// The element is in the provided `Ownership.Slot`. On deliver/buffer
+        /// paths it is taken from the slot. On suspend/reject, the element
+        /// remains in the slot for the caller to handle.
         @usableFromInline
-        mutating func send(_ element: inout Element?) -> Send.Decision {
+        mutating func send(_ slot: Ownership.Slot<Element>) -> Send.Decision {
             switch status {
             case .open:
                 // If a receiver is waiting, deliver directly.
                 // Move the receiver out of storage before consuming its
                 // continuation (the continuation is now `~Copyable`).
                 if let receiver = self.receiver.take() {
-                    guard let taken = element.take() else {
-                        preconditionFailure(
-                            "Async.Channel.Bounded.State.send(_:): element slot was empty"
-                        )
-                    }
+                    let taken = slot.take(__unchecked: ())
                     return .deliverToReceiver(receiver.continuation, taken)
                 }
 
                 // If buffer has space, add to buffer
                 if buffer.count < capacity {
-                    guard let taken = element.take() else {
-                        preconditionFailure(
-                            "Async.Channel.Bounded.State.send(_:): element slot was empty"
-                        )
-                    }
+                    let taken = slot.take(__unchecked: ())
                     buffer.push(taken, to: .back)
                     return .buffered
                 }
 
-                // Buffer full — element stays in Optional for slow-path staging
+                // Buffer full — element stays in the slot for slow-path staging
                 return .suspend(flag: Async.Waiter.Flag())
 
             case .closed, .finished:

@@ -47,12 +47,7 @@
             ) throws(Async.Channel<Element>.Error) {
                 let slot = Ownership.Slot(consume element)
                 let decision = handle.storage.withLock { state in
-                    var opt: Element? = slot.take()
-                    let d = state.send(&opt)
-                    if let remaining = opt.take() {
-                        _ = slot.store(remaining)
-                    }
-                    return d
+                    state.send(slot)
                 }
 
                 switch consume decision {
