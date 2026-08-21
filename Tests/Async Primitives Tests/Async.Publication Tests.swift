@@ -1,18 +1,6 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async_Primitives_Test_Support
 import Testing
 
-/// Test namespace for Async.Publication (generic type requires wrapper for #Tests).
 enum Publication {
     enum Test {
         @Suite struct Unit {}
@@ -21,8 +9,6 @@ enum Publication {
         @Suite(.serialized) struct Performance {}
     }
 }
-
-// MARK: - Unit Tests
 
 extension Publication.Test.Unit {
     @Test
@@ -82,8 +68,6 @@ extension Publication.Test.Unit {
     }
 }
 
-// MARK: - Edge Cases
-
 extension Publication.Test.EdgeCase {
     @Test
     func `take on never-published slot`() {
@@ -113,17 +97,11 @@ extension Publication.Test.EdgeCase {
     }
 }
 
-// MARK: - Concurrency / Stress Tests
-
 extension Publication.Test.Performance {
-
-    // MARK: - Single-Winner Linearization
 
     @Test
     func `concurrent take race - exactly one winner`() async {
-        // Multiple tasks racing to take the same value.
-        // Exactly one should win, others get nil.
-        // This tests single-winner linearization.
+
         for round in 0..<100 {
             let publication = Async.Publication<Int>()
             let publishedValue = round * 1000 + 42
@@ -143,35 +121,28 @@ extension Publication.Test.Performance {
                 return results
             }
 
-            // Exactly one winner
             let winners = results.compactMap { $0 }
             #expect(
                 winners.count == 1,
                 "Expected exactly 1 winner, got \(winners.count) in round \(round)"
             )
 
-            // Winner got the correct value
             #expect(winners.first == publishedValue)
 
-            // Losers get nil
             let losers = results.filter { $0 == nil }
             #expect(losers.count == 9)
         }
     }
 
-    // MARK: - Visibility / Happens-Before
-
     @Test
     func `publish happens-before take visibility`() async {
-        // This test verifies that publish() synchronizes with take().
-        // If publication relied on unsynchronized memory, take() could
-        // observe stale or garbage values.
+
         let publication = Async.Publication<Int>()
         let iterations = 1_000
         let range = 0..<iterations
 
         await withTaskGroup(of: Void.self) { group in
-            // Publisher: publish values in known range
+
             group.addTask {
                 for i in range {
                     publication.publish(i)
@@ -179,30 +150,26 @@ extension Publication.Test.Performance {
                 }
             }
 
-            // Taker: try to observe at least one value
             group.addTask {
                 var seen = false
                 for _ in 0..<(iterations * 10) {
                     if let value = publication.take() {
-                        // Value must be in the published range (no garbage)
+
                         #expect(range.contains(value), "Observed out-of-range value: \(value)")
                         seen = true
                         break
                     }
                     await Task.yield()
                 }
-                // Must eventually observe something (visibility guarantee)
+
                 #expect(seen, "Never observed any published value - visibility failure")
             }
         }
     }
 
-    // MARK: - Interleaving with Assertions
-
     @Test
     func `publish-take interleaving observes valid values`() async {
-        // Concurrent publish and take with assertions on observed values.
-        // This is stronger than "no crash" - it asserts semantic correctness.
+
         let publication = Async.Publication<Int>()
         let iterations = 1_000
         let range = 0..<iterations
@@ -210,7 +177,7 @@ extension Publication.Test.Performance {
         let ends = Async.Channel<Int>.Unbounded().take().ends()
 
         await withTaskGroup(of: Void.self) { group in
-            // Publisher
+
             group.addTask {
                 for i in range {
                     publication.publish(i)
@@ -218,7 +185,6 @@ extension Publication.Test.Performance {
                 }
             }
 
-            // Taker
             group.addTask { [sender = ends.sender] in
                 for _ in range {
                     if let value = publication.take() {
@@ -231,27 +197,21 @@ extension Publication.Test.Performance {
 
         ends.close()
 
-        // Collect observed values
         var observed: [Int] = []
         while let value = try? await ends.receiver.receive() {
             observed.append(value)
         }
 
-        // Must have observed at least some values
         #expect(!observed.isEmpty, "No values observed during interleaving")
 
-        // All observed values must be in the published range (no garbage)
         for value in observed {
             #expect(range.contains(value), "Observed out-of-range value: \(value)")
         }
     }
 
-    // MARK: - High Contention Admissibility
-
     @Test
     func `high contention publish-take admissibility`() async {
-        // Multiple publishers and takers racing.
-        // Assert: all observed values are in the published range.
+
         let publication = Async.Publication<Int>()
         let publisherCount = 5
         let takerCount = 5
@@ -261,7 +221,7 @@ extension Publication.Test.Performance {
         let ends = Async.Channel<Int>.Unbounded().take().ends()
 
         await withTaskGroup(of: Void.self) { group in
-            // Multiple publishers
+
             for p in 0..<publisherCount {
                 group.addTask {
                     let base = p * iterationsPerActor
@@ -272,7 +232,6 @@ extension Publication.Test.Performance {
                 }
             }
 
-            // Multiple takers
             for _ in 0..<takerCount {
                 group.addTask { [sender = ends.sender] in
                     for _ in 0..<iterationsPerActor {
@@ -287,52 +246,40 @@ extension Publication.Test.Performance {
 
         ends.close()
 
-        // Collect and validate
         var observed: [Int] = []
         while let value = try? await ends.receiver.receive() {
             observed.append(value)
         }
 
-        // All observed values must be in the admissible range
         for value in observed {
             #expect(totalRange.contains(value), "Observed inadmissible value: \(value)")
         }
 
-        // Should have observed at least some values
         #expect(!observed.isEmpty, "No values observed under high contention")
     }
 
-    // MARK: - Cancellation Bridge Pattern
-
     @Test
     func `cancellation bridge pattern - token race`() async {
-        // This tests the actual pattern Publication is designed for:
-        // publish a token, then race between operation completion and cancellation.
-        // Exactly one path should claim the token.
 
         for round in 0..<100 {
             let publication = Async.Publication<Int>()
             let token = round + 1
 
-            // Simulate the pattern used in Unbounded.receive() and Broadcast.next()
             let result = await withTaskGroup(of: String.self) { group in
-                // "Operation" path: publishes token, then tries to claim it
+
                 group.addTask {
                     publication.publish(token)
 
-                    // Yield to allow interleaving
                     await Task.yield()
 
-                    // Try to claim (simulates early-cancellation window check)
                     if let taken = publication.take() {
                         return "operation:\(taken)"
                     }
                     return "operation:lost"
                 }
 
-                // "Cancellation" path: tries to claim the token
                 group.addTask {
-                    // Yield to allow interleaving
+
                     await Task.yield()
 
                     if let taken = publication.take() {
@@ -348,14 +295,12 @@ extension Publication.Test.Performance {
                 return outcomes
             }
 
-            // Exactly one path should have claimed the token
             let claimers = result.filter { !$0.hasSuffix(":lost") }
             #expect(
                 claimers.count == 1,
                 "Expected exactly 1 claimer, got \(claimers.count) in round \(round): \(result)"
             )
 
-            // The claimed token must be correct
             if let winner = claimers.first {
                 #expect(winner.hasSuffix(":\(token)"), "Winner claimed wrong token: \(winner)")
             }

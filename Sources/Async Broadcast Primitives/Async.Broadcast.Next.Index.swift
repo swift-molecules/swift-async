@@ -1,22 +1,10 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// Async broadcast requires task suspension which is not available on embedded Swift.
 #if !hasFeature(Embedded)
 
     extension Async.Broadcast.Next {
-        /// Monotonic counter for the next element index to assign.
+
         struct Index {
             var index: UInt64 = 0
         }
     }
 
-#endif  // !hasFeature(Embedded)
+#endif

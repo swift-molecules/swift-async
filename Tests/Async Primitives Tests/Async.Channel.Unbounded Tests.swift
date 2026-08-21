@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async_Primitives_Test_Support
 import Ownership_Slot_Primitives
 import Testing
@@ -107,24 +96,19 @@ struct UnboundedChannelTests {
         let ends = Async.Channel<Int>.Unbounded().take().ends()
         let started = Async.Barrier(parties: 2)
 
-        // Use elements for Task (Elements is Sendable)
         let elements = ends.receiver.elements
         let sender = ends.sender
 
-        // Start receive in background
         let receiveTask = Task {
             try? await started.arrive()
             var iterator = elements.makeAsyncIterator()
             return try await iterator.next()
         }
 
-        // Wait for task to be ready
         try? await started.arrive()
 
-        // Send element
         try sender.send(42)
 
-        // Receive should complete with the element
         let result = try await receiveTask.value
         #expect(result == 42)
     }
@@ -137,20 +121,16 @@ struct UnboundedChannelTests {
         let elements = ends.receiver.elements
         let sender = ends.sender
 
-        // Start receive in background
         let receiveTask = Task {
             try? await started.arrive()
             var iterator = elements.makeAsyncIterator()
             return try await iterator.next()
         }
 
-        // Wait for task to be ready
         try? await started.arrive()
 
-        // Close channel
         sender.close()
 
-        // Receive should complete with nil
         let result = try await receiveTask.value
         #expect(result == nil)
     }
@@ -161,7 +141,6 @@ struct UnboundedChannelTests {
         let sender = ends.sender
         let count = 100
 
-        // Launch multiple producer tasks
         await withThrowingTaskGroup(of: Void.self) { group in
             for i in 0..<count {
                 group.addTask {
@@ -172,13 +151,11 @@ struct UnboundedChannelTests {
 
         sender.close()
 
-        // Collect all received values
         var received: Set<Int> = []
         while let value = try await ends.receiver.receive() {
             received.insert(value)
         }
 
-        // Should have received all values
         #expect(received.count == count)
         (0..<count).forEach { i in
             #expect(received.contains(i))
@@ -198,13 +175,10 @@ struct UnboundedChannelTests {
             return try await iterator.next()
         }
 
-        // Wait for task to be ready
         try? await started.arrive()
 
-        // Cancel the task
         receiveTask.cancel()
 
-        // Should throw cancelled error
         do {
             _ = try await receiveTask.value
             Issue.record("Expected cancellation error")
@@ -219,15 +193,12 @@ struct UnboundedChannelTests {
     func `Close with buffered elements drains then returns nil`() async throws {
         let ends = Async.Channel<Int>.Unbounded().take().ends()
 
-        // Buffer elements
         try ends.sender.send(1)
         try ends.sender.send(2)
         try ends.sender.send(3)
 
-        // Close while buffer is non-empty
         ends.close()
 
-        // Should be able to drain all buffered elements
         let first = try await ends.receiver.receive()
         let second = try await ends.receiver.receive()
         let third = try await ends.receiver.receive()
@@ -236,7 +207,6 @@ struct UnboundedChannelTests {
         #expect(second == 2)
         #expect(third == 3)
 
-        // After drain, should return nil
         let fourth = try await ends.receiver.receive()
         #expect(fourth == nil)
     }
@@ -245,20 +215,17 @@ struct UnboundedChannelTests {
     func `Sender copies share storage`() async throws {
         let ends = Async.Channel<Int>.Unbounded().take().ends()
         let sender1 = ends.sender
-        let sender2 = sender1  // Copy
+        let sender2 = sender1
 
-        // Send from both senders
         try sender1.send(1)
         try sender2.send(2)
 
-        // Both should go to same channel (FIFO order)
         let first = ends.receiver.poll()
         let second = ends.receiver.poll()
 
         #expect(first == 1)
         #expect(second == 2)
 
-        // Close from one sender closes for both
         sender1.close()
         #expect(sender2.closed == true)
         #expect(ends.receiver.closed == true)
@@ -314,24 +281,19 @@ struct UnboundedChannelTests {
         let elements = ends.receiver.elements
         let sender = ends.sender
 
-        // Start receiver first (will suspend)
         let receiveTask = Task {
             try? await started.arrive()
             var iterator = elements.makeAsyncIterator()
             return try await iterator.next()
         }
 
-        // Wait for receiver to be ready
         try? await started.arrive()
 
-        // Send element - should be delivered directly
         try sender.send(42)
 
-        // Receiver should get the element
         let value = try await receiveTask.value
         #expect(value == 42)
 
-        // Buffer should be empty (element was delivered directly)
         let remaining = ends.receiver.poll()
         #expect(remaining == nil)
     }
@@ -359,13 +321,10 @@ struct UnboundedChannelTests {
         let started = Async.Barrier(parties: 2)
         let sender = ends.sender
 
-        // Poll returns nil when empty (before any suspension)
         #expect(ends.receiver.poll() == nil)
 
-        // Use elements for the background task
         let elements = ends.receiver.elements
 
-        // Start a suspended receive
         let receiveTask = Task {
             try? await started.arrive()
             var iterator = elements.makeAsyncIterator()
@@ -374,13 +333,8 @@ struct UnboundedChannelTests {
 
         try? await started.arrive()
 
-        // NOTE: We intentionally do NOT poll while receiveTask is suspended
-        // because that would violate single-suspended-receiver invariant
-
-        // Send an element
         try sender.send(42)
 
-        // Receive should get it
         let value = try await receiveTask.value
         #expect(value == 42)
     }
@@ -389,11 +343,7 @@ struct UnboundedChannelTests {
     func `Non-Sendable element exits receive() across an isolation boundary (sending result)`()
         async throws
     {
-        // The receiver-side half of [MEM-SEND-010]: send() takes `consuming sending`,
-        // and receive()'s `sending` result lets a non-Sendable element leave the
-        // channel into another isolation domain. Proven additively in
-        // swift-memory-foreign-primitives/Experiments/foreign-recycle-channel (V4);
-        // this pins the canonical upstream annotation.
+
         final class Payload {
             var value: Int
             init(value: Int) { self.value = value }
@@ -414,9 +364,7 @@ struct UnboundedChannelTests {
             Issue.record("expected an element before close drained")
             return
         }
-        // Forwarding the received value into actor isolation is what the `sending`
-        // result newly permits — without it, the result merges with the receiver's
-        // region and this send is rejected.
+
         let sink = Sink()
         let received = await sink.consume(parcel)
         #expect(received == 99)

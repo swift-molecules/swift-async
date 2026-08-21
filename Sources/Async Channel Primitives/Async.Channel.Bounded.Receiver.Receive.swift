@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// Async channels require task suspension which is not available on embedded Swift.
 #if !hasFeature(Embedded)
 
     import Column_Primitives
@@ -21,7 +9,7 @@
     public import Deque_Primitives
 
     extension Async.Channel.Bounded.Receiver where Element: ~Copyable {
-        /// Receive operation accessor with variants.
+
         public struct Receive: Sendable {
             @usableFromInline
             let storage: Async.Channel<Element>.Bounded.Storage
@@ -31,14 +19,6 @@
                 self.storage = storage
             }
 
-            // swiftlint:disable:next workaround_marker_present
-            // WORKAROUND: @_optimize(none) — see Storage.handleReceive workaround comment.
-            // swift-linter:disable:next optimize suppression attribute
-            // REASON: deliberate crash-workaround per compiler-bug catalog §A19 ([ISSUE-008] disposition-1); remove when the SIL-optimizer fix ships.
-            /// Receive an element without suspending.
-            ///
-            /// - Returns: The next element if available, `nil` if the channel is closed and drained.
-            /// - Throws: `.empty` if the buffer is empty, `.cancelled` if the task was cancelled.
             @_optimize(none)
             @inlinable
             public func immediate() throws(Async.Channel<Element>.Error) -> Element? {
@@ -48,7 +28,7 @@
 
                 switch consume action {
                 case .returnElement(let element, let resumeSender, var cancelled, _):
-                    // Resume cancelled senders first (minimizes stuck time)
+
                     while let c = cancelled?.take(from: .front) {
                         c.resume(returning: .cancelled)
                     }
@@ -68,4 +48,4 @@
         }
     }
 
-#endif  // !hasFeature(Embedded)
+#endif

@@ -1,6 +1,3 @@
-// exports.swift
-// Async Primitives umbrella module exports.
-
 @_exported public import Async_Barrier_Primitives
 @_exported public import Async_Bridge_Primitives
 @_exported public import Async_Broadcast_Primitives

@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// Async broadcast requires task suspension which is not available on embedded Swift.
 #if !hasFeature(Embedded)
 
     import Dictionary_Primitives
@@ -24,20 +12,15 @@
     import Buffer_Primitive
 
     extension Async.Broadcast {
-        /// A subscription to a broadcast channel.
-        ///
-        /// Conforms to `AsyncSequence` for use in `for await` loops.
-        /// Each subscription maintains independent cursor position.
+
         public struct Subscription: Sendable {
             let broadcast: Async.Broadcast<Element>
             let id: UInt64
         }
     }
 
-    // MARK: - AsyncSequence
-
     extension Async.Broadcast.Subscription: AsyncSequence {
-        /// Creates the async iterator used to drive `for await` loops over this subscription.
+
         public func makeAsyncIterator() -> AsyncIterator {
             AsyncIterator(
                 broadcast: broadcast,
@@ -47,10 +30,8 @@
         }
     }
 
-    // MARK: - Cancel
-
     extension Async.Broadcast.Subscription {
-        /// Unsubscribe and release resources.
+
         public func cancel() {
             let continuationToCancel:
                 CheckedContinuation<Async.Broadcast<Element>.Next.Outcome, Never>? = broadcast
@@ -64,4 +45,4 @@
         }
     }
 
-#endif  // !hasFeature(Embedded)
+#endif

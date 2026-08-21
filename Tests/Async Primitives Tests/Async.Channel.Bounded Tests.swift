@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async_Primitives_Test_Support
 import Testing
 
@@ -42,7 +31,7 @@ struct BoundedChannelTests {
         } catch {
             switch error {
             case .closed:
-                break  // Expected
+                break
 
             case .cancelled, .full, .empty:
                 Issue.record("Expected .closed but got \(error)")
@@ -60,7 +49,7 @@ struct BoundedChannelTests {
         } catch {
             switch error {
             case .full:
-                break  // Expected
+                break
 
             case .closed, .cancelled, .empty:
                 Issue.record("Expected .full but got \(error)")
@@ -94,13 +83,13 @@ struct BoundedChannelTests {
         } catch {
             switch error {
             case .empty:
-                break  // Expected
+                break
 
             case .closed, .cancelled, .full:
                 Issue.record("Expected .empty but got \(error)")
             }
         }
-        _ = channel.sender  // Keep sender alive to prevent auto-close
+        _ = channel.sender
     }
 
     @Test
@@ -273,19 +262,15 @@ struct BoundedChannelTests {
             let channel = Async.Channel<Int>.Bounded(capacity: 1)
             try await channel.sender.send(42)
             ends = channel.take().ends()
-            // take().ends() consumes the channel — the stored Sender.Handle
-            // drops during partial consumption, triggering auto-close.
+
         }
 
-        // Channel auto-closed when take().ends() consumed the channel
         let isClosed = ends.isClosed
         #expect(isClosed)
 
-        // Buffered element still available after close
         let value = try await ends.receiver.receive()
         #expect(value == 42)
 
-        // Further receives return nil (channel closed)
         let closed = try await ends.receiver.receive()
         #expect(closed == nil)
     }
@@ -296,10 +281,8 @@ struct BoundedChannelTests {
         let sender = channel.sender
         let started = Async.Barrier(parties: 2)
 
-        // Fill the buffer
         try await sender.send(1)
 
-        // Start a send that will suspend (buffer full)
         let sendTask = Task { () -> Async.Channel<Int>.Error? in
             try? await started.arrive()
             do {
@@ -318,7 +301,6 @@ struct BoundedChannelTests {
         let error = await sendTask.value
         #expect(error == .cancelled)
 
-        // Drain buffered element
         _ = try await channel.receiver.receive()
     }
 

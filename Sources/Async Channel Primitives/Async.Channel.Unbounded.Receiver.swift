@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// Async channels require task suspension which is not available on embedded Swift.
 #if !hasFeature(Embedded)
 
     public import Ownership_Primitives
@@ -22,34 +10,7 @@
     import Buffer_Primitive
 
     extension Async.Channel.Unbounded where Element: ~Copyable {
-        /// A receiver for an unbounded channel.
-        ///
-        /// `Receiver` is `~Copyable` (unique) and transferable across tasks.
-        /// Exactly one receiver exists per channel, enforcing single-receiver
-        /// semantics at the type level.
-        ///
-        /// The single-suspended-receiver invariant (at most one task may be
-        /// suspended in `receive()` at a time) is enforced via runtime precondition.
-        ///
-        /// ## Usage
-        /// ```swift
-        /// var channel = Async.Channel<Int>.Unbounded()
-        ///
-        /// // Receive elements (may suspend if buffer empty)
-        /// while let value = try await channel.receiver.receive() {
-        ///     process(value)
-        /// }
-        ///
-        /// // Or iterate via AsyncSequence view
-        /// for try await value in channel.receiver.elements {
-        ///     process(value)
-        /// }
-        /// ```
-        ///
-        /// ## Thread Safety
-        /// `Receiver` is `Sendable` - it may be moved to another task
-        /// for the canonical "handoff to consumer task" pattern. The mutex guards
-        /// all state access. Concurrent suspension is caught by precondition.
+
         public struct Receiver: ~Copyable, Sendable {
             @usableFromInline
             let storage: Storage
@@ -61,30 +22,14 @@
         }
     }
 
-    // MARK: - Receive Operations
-
     extension Async.Channel.Unbounded.Receiver where Element: ~Copyable {
-        // swiftlint:disable:next workaround_marker_present
-        // WORKAROUND: @_optimize(none) — see Unbounded.Storage.handleReceive workaround comment.
-        // swift-linter:disable:next optimize suppression attribute
-        // REASON: deliberate crash-workaround per compiler-bug catalog §A19 ([ISSUE-008] disposition-1); remove when the SIL-optimizer fix ships.
-        /// Receive the next element from the channel.
-        ///
-        /// Suspends if the buffer is empty until an element becomes available
-        /// or the channel is closed and drained.
-        ///
-        /// - Returns: The next element, or `nil` if the channel is closed and drained.
-        ///   The result is `sending`: it leaves in a disconnected region, so non-Sendable
-        ///   elements that entered via the sender's `consuming sending` can exit across an
-        ///   isolation boundary — the receiver-side half of [MEM-SEND-010]
-        ///   (proven additively in swift-memory-foreign-primitives/Experiments/foreign-recycle-channel).
-        /// - Throws: `Async.Channel<Element>.Error.cancelled` if the task is cancelled.
+
         @_optimize(none)
         @inlinable
         nonisolated(nonsending)
             public func receive() async throws(Async.Channel<Element>.Error) -> sending Element?
         {
-            // Fast path: try immediate receive
+
             let fastAction = storage.withLock { state in
                 state.receive()
             }
@@ -97,19 +42,16 @@
                 return nil
 
             case .wait:
-                break  // Fall through to slow path
+                break
 
             case .cancelled:
                 throw .cancelled
             }
 
-            // Check cancellation before entering slow path
             if Task.isCancelled {
                 throw .cancelled
             }
 
-            // Slow path: need to suspend
-            // Element delivery uses Ownership.Slot — continuation carries Signal only.
             let signal: Async.Channel<Element>.Unbounded.State.Receive.Signal =
                 await withTaskCancellationHandler {
                     await unsafe withUnsafeContinuation {
@@ -118,9 +60,7 @@
                                 Async.Channel<Element>.Unbounded.State.Receive.Signal, Never
                             >
                         ) in
-                        // Single continuation threaded through the step: `state.wait`
-                        // either stores it (wait path) or hands it back inside the
-                        // returned step, and `handleReceive` resumes it from there.
+
                         let action = storage.withLock { state in
                             state.wait(unsafe Async.Continuation.Unsafe(raw))
                         }
@@ -131,7 +71,7 @@
                         )
                     }
                 } onCancel: {
-                    // Extract continuation under lock, resume outside
+
                     let stopAction = storage.withLock { state in
                         state.stop()
                     }
@@ -152,16 +92,6 @@
             }
         }
 
-        /// Poll for an element without suspending.
-        ///
-        /// - Returns: The next element if available, `nil` if the buffer is empty.
-        ///
-        /// ## Semantics
-        /// - Returns `.some(element)` if buffer has an element
-        /// - Returns `nil` if buffer is empty, regardless of closed state
-        /// - Never throws; cancellation is irrelevant because it never suspends
-        /// - `nil` means "nothing available now," not "closed"
-        /// - The result is `sending` (disconnected region), matching `receive()`
         @inlinable
         public func poll() -> sending Element? {
             storage.withLock { state in
@@ -170,37 +100,18 @@
         }
     }
 
-    // MARK: - Query
-
     extension Async.Channel.Unbounded.Receiver where Element: ~Copyable {
-        /// Whether the channel has been closed.
-        ///
-        /// Returns true when no further elements can be enqueued.
-        /// This is a view of the same channel closure state as `Sender.closed`.
-        ///
-        /// Note: Even when `true`, `receive()` may still return elements
-        /// if the buffer is not yet drained.
+
         public var closed: Bool {
             storage.withLock { $0.isClosed }
         }
     }
 
-    // MARK: - AsyncSequence View
-
     extension Async.Channel.Unbounded.Receiver {
-        /// Returns an AsyncSequence view for iteration.
-        ///
-        /// Available only when `Element` is `Copyable` (required by `AsyncSequence`).
-        /// For `~Copyable` elements, use `receive()` directly in a while loop.
-        ///
-        /// ```swift
-        /// for try await value in receiver.elements {
-        ///     process(value)
-        /// }
-        /// ```
+
         public var elements: Async.Channel<Element>.Unbounded.Elements {
             Async.Channel<Element>.Unbounded.Elements(storage: storage)
         }
     }
 
-#endif  // !hasFeature(Embedded)
+#endif

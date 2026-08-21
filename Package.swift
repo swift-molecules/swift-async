@@ -12,7 +12,7 @@ let package = Package(
         .visionOS(.v27),
     ],
     products: [
-        // MARK: - Namespace + foundational ([MOD-017] singular root + [MOD-031] sub-namespaces)
+
         .library(
             name: "Async Primitive",
             targets: ["Async Primitive"]
@@ -41,12 +41,12 @@ let package = Package(
             name: "Async Precedence Primitives",
             targets: ["Async Precedence Primitives"]
         ),
-        // MARK: - Mutex
+
         .library(
             name: "Async Mutex Primitives",
             targets: ["Async Mutex Primitives"]
         ),
-        // MARK: - Coordination
+
         .library(
             name: "Async Bridge Primitives",
             targets: ["Async Bridge Primitives"]
@@ -67,7 +67,7 @@ let package = Package(
             name: "Async Completion Primitives",
             targets: ["Async Completion Primitives"]
         ),
-        // MARK: - Variants
+
         .library(
             name: "Async Channel Primitives",
             targets: ["Async Channel Primitives"]
@@ -84,7 +84,7 @@ let package = Package(
             name: "Async Semaphore Primitives",
             targets: ["Async Semaphore Primitives"]
         ),
-        // MARK: - Umbrella
+
         .library(
             name: "Async Primitives",
             targets: ["Async Primitives"]
@@ -169,12 +169,6 @@ let package = Package(
         ),
     ],
     targets: [
-        // MARK: - Namespace + foundational
-        //
-        // [MOD-017]: `Async Primitive` (SINGULAR) owns the root `enum Async {}` plus
-        // the package's foundational, stdlib-only declarations. Zero external-package
-        // dependencies — the load-bearing invariant. [MOD-031]: each sub-namespace
-        // `Async.{X}` is its own target.
 
         .target(
             name: "Async Primitive",
@@ -208,7 +202,6 @@ let package = Package(
             dependencies: ["Async Primitive"]
         ),
 
-        // MARK: - Mutex
         .target(
             name: "Async Mutex Primitives",
             dependencies: [
@@ -216,7 +209,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Coordination
         .target(
             name: "Async Bridge Primitives",
             dependencies: [
@@ -270,7 +262,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Variants
         .target(
             name: "Async Channel Primitives",
             dependencies: [
@@ -357,7 +348,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Semaphore
         .target(
             name: "Async Semaphore Primitives",
             dependencies: [
@@ -374,9 +364,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Umbrella
-        //
-        // [MOD-005]: re-exports ALL sub-targets (root + sub-namespaces + variants).
         .target(
             name: "Async Primitives",
             dependencies: [
@@ -400,7 +387,6 @@ let package = Package(
             ]
         ),
 
-        // Tests in nested Tests/Package.swift (circular dep avoidance)
         .testTarget(
             name: "Async Primitives Tests",
             dependencies: [
@@ -409,7 +395,6 @@ let package = Package(
             ]
         ),
 
-        // MARK: - Test Support
         .target(
             name: "Async Primitives Test Support",
             dependencies: [

@@ -1,18 +1,5 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async_Primitives_Test_Support
 import Testing
-
-// MARK: - Test Suites
 
 enum Core {
     enum Test {
@@ -25,8 +12,6 @@ enum Core {
         #endif
     }
 }
-
-// MARK: - Lifecycle Tests
 
 extension Core.Test.Lifecycle {
     @Test
@@ -130,14 +115,12 @@ extension Core.Test.Lifecycle {
     @Test
     func `cannot skip closing state`() {
         var state: Async.Lifecycle.State = .open
-        // Cannot go directly from open to closed
+
         let result = state.shutdown.complete()
         #expect(!result)
         #expect(state == .open)
     }
 }
-
-// MARK: - Precedence Tests
 
 extension Core.Test.Precedence {
     @Test
@@ -216,8 +199,6 @@ extension Core.Test.Precedence {
     }
 }
 
-// MARK: - Promise Tests
-
 extension Core.Test.Promise {
     @Test
     func `init creates unfulfilled promise`() {
@@ -228,23 +209,17 @@ extension Core.Test.Promise {
 
     @Test
     func `value() does not observe Task cancellation`() async {
-        // Pins the documented contract: Promise.value() is non-observing
-        // by signature (async -> Value, not throws). A cancelled Task
-        // awaiting value() still resumes with the fulfilled value.
+
         let promise = Async.Promise<Int>()
 
         let task = Task { await promise.value() }
 
-        // Let the task suspend on value()
         try? await Task.sleep(for: .milliseconds(20))
 
-        // Cancel the awaiter — should NOT interrupt value()
         task.cancel()
 
-        // Give cancellation time to propagate (it shouldn't, but we test that)
         try? await Task.sleep(for: .milliseconds(20))
 
-        // Fulfill — every waiter (including the cancelled task) resumes
         #expect(promise.fulfill(42))
 
         let result = await task.value
@@ -266,7 +241,7 @@ extension Core.Test.Promise {
         let promise = Async.Promise<Int>()
         #expect(promise.fulfill(1))
         #expect(!promise.fulfill(2))
-        // First value wins
+
         #expect(promise.fulfilled == 1)
     }
 
@@ -291,10 +266,8 @@ extension Core.Test.Promise {
             publication.publish(value)
         }
 
-        // Not yet fulfilled
         #expect(publication.take() == nil)
 
-        // Fulfill triggers callback
         promise.fulfill(99)
         #expect(publication.take() == 99)
     }
@@ -355,12 +328,10 @@ extension Core.Test.Promise {
             let gate = Async.Gate()
             gate.open()
             await gate.wait()
-            // If we reach here, wait returned correctly
+
         }
     #endif
 }
-
-// MARK: - Barrier Tests
 
 extension Core.Test.Barrier {
     @Test
@@ -372,12 +343,9 @@ extension Core.Test.Barrier {
 
     @Test
     func `arrive() throws cancelled on mid-await cancellation`() async throws {
-        // Pins Shape A contract: a cancelled mid-await party throws
-        // .cancelled (rolled back from arrived, added to cancelled);
-        // remaining parties release when arrived == parties - cancelled.
+
         let barrier = Async.Barrier(parties: 2)
 
-        // Spawn one party that will be cancelled mid-await.
         let cancellableTask = Task { () async -> Result<Void, Async.Lifecycle.Error> in
             do throws(Async.Lifecycle.Error) {
                 try await barrier.arrive()
@@ -387,27 +355,21 @@ extension Core.Test.Barrier {
             }
         }
 
-        // Let the task suspend on arrive().
         try? await Task.sleep(for: .milliseconds(20))
         #expect(barrier.arrived == 1, "first party arrived and is suspended")
 
-        // Cancel the suspended party.
         cancellableTask.cancel()
 
-        // Allow cancellation to propagate.
         try? await Task.sleep(for: .milliseconds(20))
 
-        // First party should have thrown .cancelled and been removed from
-        // the rendezvous; effective parties = 2 - 1 = 1.
         let firstResult = await cancellableTask.value
         if case .failure(.cancelled) = firstResult {
-            // expected
+
         } else {
             Issue.record("expected .failure(.cancelled), got \(firstResult)")
         }
         #expect(barrier.cancelledCount == 1, "cancellation count incremented")
 
-        // Second party arrives → effective parties (1) reached → release.
         try await barrier.arrive()
         #expect(barrier.isReleased, "barrier releases on effective party count met")
         #expect(barrier.arrived == 1, "arrived rolled back the cancelled party")
@@ -444,7 +406,6 @@ extension Core.Test.Barrier {
         #expect(barrier.arrived == 2)
         #expect(!barrier.isReleased)
 
-        // Last party triggers all callbacks
         barrier.arrive { pub3.publish(true) }
         #expect(pub1.take() == true)
         #expect(pub2.take() == true)
@@ -481,8 +442,6 @@ extension Core.Test.Barrier {
         }
     #endif
 }
-
-// MARK: - Completion Tests
 
 #if !hasFeature(Embedded)
     extension Core.Test.Completion {
@@ -544,7 +503,7 @@ extension Core.Test.Barrier {
                 try completion.start()
                 Issue.record("Expected alreadyDone error")
             } catch {
-                // Transition.Error.alreadyDone — expected
+
             }
         }
 
@@ -555,7 +514,7 @@ extension Core.Test.Barrier {
                 try completion.complete(42)
                 Issue.record("Expected alreadyDone error")
             } catch {
-                // Expected — complete requires running state
+
             }
         }
 
@@ -566,7 +525,7 @@ extension Core.Test.Barrier {
                 try completion.timeout()
                 Issue.record("Expected alreadyDone error")
             } catch {
-                // Expected — timeout requires running state
+
             }
         }
 
@@ -579,7 +538,7 @@ extension Core.Test.Barrier {
                 try completion.cancel()
                 Issue.record("Expected alreadyDone error")
             } catch {
-                // Expected — already in terminal state
+
             }
         }
 
@@ -592,7 +551,7 @@ extension Core.Test.Barrier {
                 try completion.complete(99)
                 Issue.record("Expected alreadyDone error")
             } catch {
-                // Expected — already timed out
+
             }
         }
 
@@ -616,7 +575,7 @@ extension Core.Test.Barrier {
                 try completion.fail(.testFailure)
                 Issue.record("Expected alreadyDone error")
             } catch {
-                // Expected — fail only works from pending
+
             }
         }
 
@@ -656,7 +615,7 @@ extension Core.Test.Barrier {
             }
 
             if case .failure(.cancelled) = result {
-                // Expected
+
             } else {
                 Issue.record("Expected cancelled error, got \(result)")
             }
@@ -677,14 +636,12 @@ extension Core.Test.Barrier {
             }
 
             if case .failure(.timeout) = result {
-                // Expected
+
             } else {
                 Issue.record("Expected timeout error, got \(result)")
             }
         }
     }
-
-    // MARK: - Test Helpers
 
     private enum TestError: Swift.Error, Sendable {
         case testFailure

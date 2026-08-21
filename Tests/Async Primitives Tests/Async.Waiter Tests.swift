@@ -1,18 +1,5 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async_Primitives_Test_Support
 import Testing
-
-// MARK: - Test Suites
 
 enum Waiter {
     enum Test {
@@ -21,8 +8,6 @@ enum Waiter {
         @Suite struct Queue {}
     }
 }
-
-// MARK: - Flag Tests
 
 extension Waiter.Test.Flag {
     @Test
@@ -112,12 +97,6 @@ extension Waiter.Test.Flag {
     }
 }
 
-// MARK: - Entry Tests
-//
-// Note: Entry<Outcome, Metadata> is ~Copyable. The #expect macro cannot
-// capture ~Copyable property accesses, so we extract Copyable values into
-// locals before asserting.
-
 extension Waiter.Test.Entry {
     @Test
     func `entry stores flag reference`() {
@@ -126,7 +105,7 @@ extension Waiter.Test.Entry {
         let entry = Async.Waiter.Entry(continuation: cont, flag: flag)
         let isFlagged = entry.flag.isFlagged
         #expect(!isFlagged)
-        // Flag is shared by reference — mutation visible through entry
+
         flag.cancel()
         let nowCancelled = entry.flag.cancelled
         #expect(nowCancelled)
@@ -169,12 +148,6 @@ extension Waiter.Test.Entry {
     }
 }
 
-// MARK: - Queue Tests
-//
-// Note: Queue<Entry>, Flagged, and Entry are ~Copyable. Property accesses
-// on ~Copyable types must be extracted to Copyable locals before passing
-// to #expect, which internally captures the expression via closure.
-
 extension Waiter.Test.Queue {
     @Test
     func `popEligible returns unflagged entry`() {
@@ -202,7 +175,6 @@ extension Waiter.Test.Queue {
     func `popEligible skips cancelled entries`() {
         var queue = Async.Waiter.Queue.Unbounded<Bool, Void>()
 
-        // Cancelled entry
         let flag1 = Async.Waiter.Flag()
         flag1.cancel()
         queue.enqueue(
@@ -212,7 +184,6 @@ extension Waiter.Test.Queue {
             )
         )
 
-        // Unflagged entry
         let flag2 = Async.Waiter.Flag()
         queue.enqueue(
             Async.Waiter.Entry(
@@ -230,7 +201,6 @@ extension Waiter.Test.Queue {
             Issue.record("Expected an eligible entry")
         }
 
-        // One cancelled entry should be in the drain
         var flaggedCount = 0
         while !flagged.isEmpty {
             _ = flagged.dequeue()
@@ -243,7 +213,6 @@ extension Waiter.Test.Queue {
     func `popEligible skips timed out entries`() {
         var queue = Async.Waiter.Queue.Unbounded<Bool, Void>()
 
-        // Timed out entry
         let flag1 = Async.Waiter.Flag()
         flag1.timeout()
         queue.enqueue(
@@ -253,7 +222,6 @@ extension Waiter.Test.Queue {
             )
         )
 
-        // Unflagged entry
         let flag2 = Async.Waiter.Flag()
         queue.enqueue(
             Async.Waiter.Entry(
@@ -283,7 +251,6 @@ extension Waiter.Test.Queue {
     func `popEligible skips multiple flagged entries`() {
         var queue = Async.Waiter.Queue.Unbounded<Bool, Void>()
 
-        // Two flagged entries
         let flag1 = Async.Waiter.Flag()
         flag1.cancel()
         queue.enqueue(
@@ -302,7 +269,6 @@ extension Waiter.Test.Queue {
             )
         )
 
-        // One unflagged entry
         let flag3 = Async.Waiter.Flag()
         queue.enqueue(
             Async.Waiter.Entry(
@@ -356,7 +322,6 @@ extension Waiter.Test.Queue {
             _ = consume eligible
         }
 
-        // Both entries should be in flagged drain
         var flaggedCount = 0
         while !flagged.isEmpty {
             _ = flagged.dequeue()
@@ -379,7 +344,6 @@ extension Waiter.Test.Queue {
     func `reapFlagged collects flagged and retains unflagged`() {
         var queue = Async.Waiter.Queue.Unbounded<Bool, Void>()
 
-        // Unflagged
         queue.enqueue(
             Async.Waiter.Entry(
                 continuation: Async.Continuation<Bool> { _ in },
@@ -387,7 +351,6 @@ extension Waiter.Test.Queue {
             )
         )
 
-        // Cancelled
         let flagCancel = Async.Waiter.Flag()
         flagCancel.cancel()
         queue.enqueue(
@@ -397,7 +360,6 @@ extension Waiter.Test.Queue {
             )
         )
 
-        // Unflagged
         queue.enqueue(
             Async.Waiter.Entry(
                 continuation: Async.Continuation<Bool> { _ in },
@@ -405,7 +367,6 @@ extension Waiter.Test.Queue {
             )
         )
 
-        // Timed out
         let flagTimeout = Async.Waiter.Flag()
         flagTimeout.timeout()
         queue.enqueue(
@@ -418,7 +379,6 @@ extension Waiter.Test.Queue {
         var flagged = Async.Waiter.Queue.Drain<Async.Waiter.Queue.Flagged<Bool, Void>>()
         queue.reapFlagged(into: &flagged)
 
-        // 2 flagged entries collected
         var flaggedCount = 0
         while !flagged.isEmpty {
             _ = flagged.dequeue()
@@ -426,7 +386,6 @@ extension Waiter.Test.Queue {
         }
         #expect(flaggedCount == 2)
 
-        // 2 unflagged entries remain
         var remainingCount = 0
         while !queue.isEmpty {
             _ = queue.dequeue()

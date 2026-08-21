@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// Async channels require task suspension which is not available on embedded Swift.
 #if !hasFeature(Embedded)
 
     public import Ownership_Primitives
@@ -21,7 +9,7 @@
     import Buffer_Primitive
 
     extension Async.Channel.Bounded.Sender where Element: ~Copyable {
-        /// Send operation accessor with variants.
+
         public struct Send: Sendable {
             @usableFromInline
             let handle: Handle
@@ -31,15 +19,6 @@
                 self.handle = handle
             }
 
-            // swiftlint:disable:next workaround_marker_present
-            // WORKAROUND: @_optimize(none) — see Storage.handleSend workaround comment.
-            // swift-linter:disable:next optimize suppression attribute
-            // REASON: deliberate crash-workaround per compiler-bug catalog §A19 ([ISSUE-008] disposition-1); remove when the SIL-optimizer fix ships.
-            /// Send an element without suspending.
-            ///
-            /// - Parameter element: The element to send.
-            /// - Throws: `.full` if the buffer is full, `.closed` if the channel is closed,
-            ///           `.cancelled` if the task was cancelled.
             @_optimize(none)
             @inlinable
             public func immediate(
@@ -70,4 +49,4 @@
         }
     }
 
-#endif  // !hasFeature(Embedded)
+#endif

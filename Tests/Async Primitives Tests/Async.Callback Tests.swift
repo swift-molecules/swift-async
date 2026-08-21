@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 import Async_Primitives_Test_Support
 import Testing
 
@@ -20,20 +9,6 @@ import Testing
     import WinSDK
 #endif
 
-// MARK: - Helpers
-
-/// Identity of the current thread, for caller-actor preservation probes.
-///
-/// `pthread_main_np()` is Darwin-only: it answers "is this the OS main
-/// thread," which is a valid MainActor proxy only on Darwin. On Linux the
-/// MainActor executor does not necessarily run on the thread glibc
-/// considers the process's initial thread — a bare `@MainActor` test body
-/// can report a non-main OS thread while genuinely running isolated on
-/// MainActor. Comparing thread identity against the MainActor thread
-/// captured at the top of each `@MainActor` test body is platform-neutral:
-/// the MainActor executor is a single fixed thread on both platforms, so
-/// the captured identity is stable across suspension points. No Foundation
-/// dependency either way.
 private func currentThreadID() -> UInt {
     #if canImport(Darwin)
         UInt(pthread_mach_thread_np(pthread_self()))
@@ -44,15 +19,11 @@ private func currentThreadID() -> UInt {
     #endif
 }
 
-/// A non-Sendable reference type for testing `Value: ~Sendable` support.
 private final class Box<T> {
     var value: T
     init(_ value: T) { self.value = value }
 }
 
-// MARK: - Test Suites
-
-/// Test namespace for Async.Callback (generic type requires wrapper per [TEST-004]).
 enum Callback {
     enum Test {
         @Suite struct Unit {}
@@ -61,8 +32,6 @@ enum Callback {
         @Suite(.serialized) struct Performance {}
     }
 }
-
-// MARK: - Unit Tests
 
 extension Callback.Test.Unit {
     @Test
@@ -102,7 +71,7 @@ extension Callback.Test.Unit {
             .map { $0 + 5 }
             .map { "v=\($0)" }
             .map { $0.count }
-        #expect(await callback() == 4)  // "v=15".count
+        #expect(await callback() == 4)
     }
 
     @Test
@@ -117,7 +86,7 @@ extension Callback.Test.Unit {
         let callback = Async.Callback(value: 1)
             .flatMap { v in Async.Callback(value: v + 10) }
             .flatMap { v in Async.Callback(value: v * 2) }
-        #expect(await callback() == 22)  // (1+10)*2
+        #expect(await callback() == 22)
     }
 
     @Test
@@ -144,8 +113,6 @@ extension Callback.Test.Unit {
         }
     #endif
 }
-
-// MARK: - Edge Cases
 
 extension Callback.Test.EdgeCase {
     @Test
@@ -215,8 +182,6 @@ extension Callback.Test.EdgeCase {
         }
     #endif
 }
-
-// MARK: - Integration (Isolation)
 
 extension Callback.Test.Integration {
     @Test @MainActor

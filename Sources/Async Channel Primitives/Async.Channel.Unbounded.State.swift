@@ -1,15 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
-// Async channels require task suspension which is not available on embedded Swift.
 #if !hasFeature(Embedded)
 
     import Queue_Primitives
@@ -23,31 +11,15 @@
     import Buffer_Primitive
 
     extension Async.Channel.Unbounded where Element: ~Copyable {
-        /// Pure state machine for unbounded channel operations.
-        ///
-        /// This state machine contains no side effects. All operations return
-        /// `Action` values that describe what the caller should do.
-        ///
-        /// ## Single-Suspended-Receiver Invariant
-        /// At most one task may be suspended in `receive()` at a time.
-        /// Concurrent suspended receives trigger a precondition failure.
+
         @usableFromInline
         struct State: ~Copyable {
             @usableFromInline
             var buffer: Deque<Column.Ring<Element>>
 
-            /// The suspended receiver's continuation, or `nil` when none is
-            /// waiting.
-            ///
-            /// Mirrors the bounded channel's flat representation so
-            /// extraction is the stdlib `waiter.take()` — no slot enum, no helper.
             @usableFromInline
             var waiter: Receive.Continuation?
 
-            /// Set when the receiver cancelled before a value arrived; rejects a
-            /// later `wait`.
-            ///
-            /// Mutually exclusive with a non-nil `waiter`.
             @usableFromInline
             var cancelledReceiver: Bool
 
@@ -64,23 +36,17 @@
         }
     }
 
-    // MARK: - Status
-
     extension Async.Channel.Unbounded.State where Element: ~Copyable {
         @usableFromInline
         enum Status: Sendable {
-            /// Channel is open and operational.
+
             case open
 
-            /// Channel is closed but may still have buffered elements.
             case closed
 
-            /// Channel is finished - no more elements, fully drained.
             case finished
         }
     }
-
-    // MARK: - Query
 
     extension Async.Channel.Unbounded.State where Element: ~Copyable {
         @usableFromInline
@@ -94,8 +60,6 @@
             }
         }
     }
-
-    // MARK: - Send
 
     extension Async.Channel.Unbounded.State where Element: ~Copyable {
         @usableFromInline
@@ -112,11 +76,7 @@
     }
 
     extension Async.Channel.Unbounded.State where Element: ~Copyable {
-        /// Send an element to the channel.
-        ///
-        /// The element is in the provided `Ownership.Slot`. On deliver, it is
-        /// taken and returned in the action. On buffer, it is taken and pushed.
-        /// On shut, it remains in the slot (cleaned up by deinit).
+
         @usableFromInline
         mutating func send(_ slot: Ownership.Slot<Element>) -> Send.Action {
             switch status {
@@ -135,37 +95,26 @@
         }
     }
 
-    // MARK: - Receive
-
     extension Async.Channel.Unbounded.State where Element: ~Copyable {
         @usableFromInline
         enum Receive {}
     }
 
     extension Async.Channel.Unbounded.State.Receive where Element: ~Copyable {
-        /// Lightweight signal carried through the continuation.
-        ///
-        /// Element delivery happens via Ownership.Slot, not through the continuation.
+
         @usableFromInline
         enum Signal: Sendable {
-            /// An element was delivered via the delivery slot.
+
             case delivered
-            /// The channel is closed and drained.
+
             case closed
-            /// The operation was cancelled.
+
             case cancelled
         }
 
-        /// Continuation type for receive operations.
-        ///
-        /// Carries Signal (Copyable) — element travels via Ownership.Slot.
         @usableFromInline
         typealias Continuation = Async.Continuation<Signal>.Unsafe
 
-        // `Step` is shared by the fast path `receive()` (no continuation) and
-        // the slow path `wait(_:)` (has one), so the handed-back receiver
-        // continuation is optional. It is resumed from `handleReceive`; the
-        // `.wait` case stores the continuation in the slot instead.
         @usableFromInline
         enum Step: ~Copyable {
             case val(
@@ -177,7 +126,6 @@
             case cancelled(receiver: Async.Channel<Element>.Unbounded.State.Receive.Continuation?)
         }
 
-        // `~Copyable`: `.stop` carries a `Continuation` (now `~Copyable`).
         @usableFromInline
         enum Stop: ~Copyable, Sendable {
             case none
@@ -186,13 +134,12 @@
     }
 
     extension Async.Channel.Unbounded.State where Element: ~Copyable {
-        /// Non-blocking receive: take from buffer if available.
+
         @usableFromInline
         mutating func poll() -> Element? {
             buffer.take(from: .front)
         }
 
-        /// Synchronous receive attempt.
         @usableFromInline
         mutating func receive() -> Receive.Step {
             if let element = buffer.take(from: .front) {
@@ -204,7 +151,6 @@
             return .wait
         }
 
-        /// Register a receiver that will suspend.
         @usableFromInline
         mutating func wait(_ cont: consuming Receive.Continuation) -> Receive.Step {
             if cancelledReceiver {
@@ -228,22 +174,19 @@
             return .wait
         }
 
-        /// Handle receiver cancellation.
         @usableFromInline
         mutating func stop() -> Receive.Stop {
             if let cont = waiter.take() {
                 return .stop(cont)
             }
-            // No waiter — mark cancelled so a later `wait` is rejected.
+
             cancelledReceiver = true
             return .none
         }
     }
 
-    // MARK: - Close
-
     extension Async.Channel.Unbounded.State where Element: ~Copyable {
-        // `~Copyable`: `.end` carries a `Receive.Continuation` (now `~Copyable`).
+
         @usableFromInline
         enum Close: ~Copyable, Sendable {
             case none
@@ -265,4 +208,4 @@
         }
     }
 
-#endif  // !hasFeature(Embedded)
+#endif

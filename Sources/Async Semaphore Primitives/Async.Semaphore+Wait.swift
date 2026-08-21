@@ -1,14 +1,3 @@
-// ===----------------------------------------------------------------------===//
-//
-// This source file is part of the swift-async open source project
-//
-// Copyright (c) 2025-2026 Coen ten Thije Boonkkamp and the swift-async project authors
-// Licensed under Apache License v2.0
-//
-// See LICENSE for license information
-//
-// ===----------------------------------------------------------------------===//
-
 #if !hasFeature(Embedded)
     public import Async_Primitive
     internal import Async_Mutex_Primitives
@@ -16,25 +5,13 @@
     internal import Queue_Primitive
     internal import Queue_Primitives
 
-    // MARK: - Wait (Async)
-
     extension Async.Semaphore {
-        /// Acquires a permit, suspending if none available.
-        ///
-        /// If a permit is available (N > 0), decrements and returns immediately.
-        /// Otherwise suspends the calling task in FIFO order until a permit is
-        /// released via `signal()`.
-        ///
-        /// Respects Task cancellation: throws `.cancelled` if the task is
-        /// cancelled while waiting.
-        ///
-        /// - Throws: `Async.Semaphore.Error.shutdown` if shut down.
-        /// - Throws: `Async.Semaphore.Error.cancelled` if the task is cancelled.
+
         nonisolated(nonsending)
-            // swiftlint:disable:next prefer_self_in_static_references - reason: `Self.Error` does not compile in a throws() clause on this toolchain ('Error' is not a member type of type 'Self', verified via swiftc) — verified 2026-07-06.
+
             public func wait() async throws(Async.Semaphore.Error)
         {
-            // Phase 1: Try immediate acquisition under lock
+
             enum Action {
                 case acquired
                 case shutdown
@@ -72,14 +49,8 @@
             }
         }
 
-        /// Acquires a permit with a timeout, suspending up to the given duration.
-        ///
-        /// - Parameter timeout: Maximum duration to wait for a permit.
-        /// - Throws: `Async.Semaphore.Error.timeout` if the duration expires.
-        /// - Throws: `Async.Semaphore.Error.shutdown` if shut down.
-        /// - Throws: `Async.Semaphore.Error.cancelled` if the task is cancelled.
         nonisolated(nonsending)
-            // swiftlint:disable:next prefer_self_in_static_references - reason: `Self.Error` does not compile in a throws() clause on this toolchain ('Error' is not a member type of type 'Self', verified via swiftc) — verified 2026-07-06.
+
             public func wait(timeout: Duration) async throws(Async.Semaphore.Error)
         {
             enum Action {
@@ -120,28 +91,17 @@
         }
     }
 
-    // MARK: - Suspension Implementation
-
     extension Async.Semaphore {
-        /// Suspends the calling task until a permit becomes available.
-        ///
-        /// Uses `withTaskCancellationHandler` + flag-based cancellation,
-        /// following the same pattern as Pool.Bounded.
+
         @usableFromInline
-        // swiftlint:disable:next prefer_self_in_static_references - reason: `Self.Error` does not compile in a throws() clause on this toolchain ('Error' is not a member type of type 'Self', verified via swiftc) — verified 2026-07-06.
+
         func suspendForPermit() async throws(Async.Semaphore.Error) {
             let flag = Async.Waiter.Flag()
 
             let outcome: Outcome = await withTaskCancellationHandler {
                 await withCheckedContinuation { continuation in
                     _state.withLock { state in
-                        // Pre-registration check: cancellation (or timeout)
-                        // arrived before suspension was registered. Mirrors
-                        // Channel.Bounded.State.suspend(flag:...)'s guard —
-                        // without it, `onCancel`'s unstructured
-                        // `Task { pumpWaiters() }` can lose the race against
-                        // this very enqueue, orphaning an already-flagged
-                        // waiter that nothing will ever rescan again.
+
                         if flag.isFlagged {
                             let outcome: Outcome = Async.Precedence.resolve(
                                 shutdown: !state.lifecycle.isOpen,
@@ -152,11 +112,7 @@
                                 onCancelled: .failure(.cancelled),
                                 onTimeout: .failure(.timeout)
                             )
-                            // Track metrics for the pre-registration path too:
-                            // a waiter that never enqueues still represents an
-                            // observed cancellation/timeout. Without this, only
-                            // post-enqueue cancellations (via pumpWaiters) were
-                            // counted, under-counting the pre-registration race.
+
                             switch outcome {
                             case .failure(.cancelled):
                                 state.metrics.cancellations += 1
@@ -171,8 +127,6 @@
                             return
                         }
 
-                        // Re-check under lock: lifecycle may have changed
-                        // or a permit may have become available
                         if !state.lifecycle.isOpen {
                             continuation.resume(returning: .failure(.shutdown))
                             return
@@ -212,20 +166,16 @@
             }
         }
 
-        /// Suspends with a timeout deadline.
         @usableFromInline
-        // swiftlint:disable:next prefer_self_in_static_references - reason: `Self.Error` does not compile in a throws() clause on this toolchain ('Error' is not a member type of type 'Self', verified via swiftc) — verified 2026-07-06.
+
         func suspendForPermit(timeout: Duration) async throws(Async.Semaphore.Error) {
             let flag = Async.Waiter.Flag()
 
-            // Start the timeout task before suspending
             let timeoutTask = Task {
                 do {
                     try await Task.sleep(for: timeout)
                 } catch {
-                    // Cancellation (or any other Task.sleep failure) — the
-                    // timeout task was cancelled (e.g. the wait completed
-                    // first), so there is nothing to do.
+
                     return
                 }
                 if flag.timeout() {
@@ -236,13 +186,7 @@
             let outcome: Outcome = await withTaskCancellationHandler {
                 await withCheckedContinuation { continuation in
                     _state.withLock { state in
-                        // Pre-registration check: cancellation (or timeout)
-                        // arrived before suspension was registered. Mirrors
-                        // Channel.Bounded.State.suspend(flag:...)'s guard —
-                        // without it, `onCancel`'s unstructured
-                        // `Task { pumpWaiters() }` can lose the race against
-                        // this very enqueue, orphaning an already-flagged
-                        // waiter that nothing will ever rescan again.
+
                         if flag.isFlagged {
                             let outcome: Outcome = Async.Precedence.resolve(
                                 shutdown: !state.lifecycle.isOpen,
@@ -253,11 +197,7 @@
                                 onCancelled: .failure(.cancelled),
                                 onTimeout: .failure(.timeout)
                             )
-                            // Track metrics for the pre-registration path too:
-                            // a waiter that never enqueues still represents an
-                            // observed cancellation/timeout. Without this, only
-                            // post-enqueue cancellations (via pumpWaiters) were
-                            // counted, under-counting the pre-registration race.
+
                             switch outcome {
                             case .failure(.cancelled):
                                 state.metrics.cancellations += 1
@@ -314,17 +254,11 @@
         }
     }
 
-    // MARK: - Waiter Pumping
-
     extension Async.Semaphore {
-        /// Pumps the waiter queue, resuming flagged waiters.
-        ///
-        /// Called by cancellation handlers and timeout tasks after setting
-        /// a waiter's flag. Reaps flagged entries and resumes them with
-        /// the appropriate error outside the lock.
+
         @usableFromInline
         func pumpWaiters() {
-            // Collect resumptions under lock, return them for execution outside
+
             var pending: Async.Waiter.Queue.Drain<Async.Waiter.Resumption> = _state.withLock {
                 state in
                 let currentLifecycle = state.lifecycle
@@ -336,18 +270,12 @@
 
                 var reapedCount = 0
                 var resumptions = Async.Waiter.Queue.Drain<Async.Waiter.Resumption>()
-                // A while-let dequeue rather than drain { }: the Windows
-                // 6.3.3+Asserts toolchain's MoveOnlyAddressChecker asserts
-                // (MoveOnlyAddressCheckerUtils.cpp:1829) checking this body
-                // as a nested closure under -enable-testing; the loop form
-                // avoids the closure function entirely. Semantics identical.
+
                 while let flaggedEntry = flagged.dequeue() {
                     reapedCount += 1
-                    // resumption(resolving:) consumes the flagged entry in
-                    // its defining module — see the Flagged extension for the
-                    // Windows MoveOnlyChecker rationale.
+
                     let resumption = flaggedEntry.resumption { reason in
-                        // Apply precedence: shutdown > cancelled > timeout
+
                         let outcome: Outcome = Async.Precedence.resolve(
                             shutdown: currentLifecycle != .open,
                             cancelled: reason == .cancelled,
@@ -357,9 +285,7 @@
                             onCancelled: .failure(.cancelled),
                             onTimeout: .failure(.timeout)
                         )
-                        // Track metrics for flagged waiters (inside the
-                        // resolve closure: Resumption is noncopyable, so the
-                        // helper cannot also return the outcome)
+
                         switch outcome {
                         case .failure(.cancelled):
                             state.metrics.cancellations += 1
@@ -380,7 +306,6 @@
                 return resumptions
             }
 
-            // Resume OUTSIDE lock
             pending.drain { $0.resume() }
         }
     }
