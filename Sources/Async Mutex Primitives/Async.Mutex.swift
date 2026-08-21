@@ -86,7 +86,7 @@
     extension Async.Mutex where Value: ~Copyable {
         @usableFromInline
         func _lockPointer() -> UnsafeMutablePointer<os_unfair_lock_s> {
-            unsafe withUnsafePointer(to: _lockRaw) { base in
+            withUnsafePointer(to: _lockRaw) { base in
                 unsafe UnsafeMutablePointer(
                     mutating: UnsafeRawPointer(base)
                         .assumingMemoryBound(to: os_unfair_lock_s.self)
@@ -96,7 +96,7 @@
 
         @usableFromInline
         func _valuePointer() -> UnsafeMutablePointer<Value> {
-            unsafe withUnsafePointer(to: _valueRaw) { base in
+            withUnsafePointer(to: _valueRaw) { base in
                 unsafe UnsafeMutablePointer(
                     mutating: UnsafeRawPointer(base)
                         .assumingMemoryBound(to: Value.self)
