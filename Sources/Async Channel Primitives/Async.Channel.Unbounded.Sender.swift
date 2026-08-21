@@ -15,7 +15,7 @@
     public import Ownership_Primitives
     import Column_Primitives
     public import Buffer_Ring_Primitive
-    public import Storage_Contiguous_Primitives
+    import Storage_Contiguous_Primitives
     import Memory_Heap_Primitives
     import Memory_Allocator_Primitive
     import Buffer_Primitive

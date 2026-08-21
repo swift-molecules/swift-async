@@ -11,8 +11,8 @@
 
 import Buffer_Primitive
 public import Buffer_Ring_Bounded_Primitive
-public import Buffer_Ring_Primitive
-public import Column_Primitives
+import Buffer_Ring_Primitive
+import Column_Primitives
 import Memory_Allocator_Primitive
 import Memory_Heap_Primitives
 public import Queue_Primitives
