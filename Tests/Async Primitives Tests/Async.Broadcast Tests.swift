@@ -389,6 +389,7 @@
 
             let results = Async.Channel<(id: Int, elements: [Int], terminatedViaCancellation: Bool)>
                 .Unbounded().take().ends()
+            let ready = Async.Channel<Int>.Unbounded().take().ends()
 
             var subscriberTasks: [(id: Int, task: Task<Void, Never>)] = []
 
@@ -399,6 +400,10 @@
                     var terminatedViaCancellation = false
 
                     var iterator = subscription.makeAsyncIterator()
+                    do {
+                        try ready.sender.send(id)
+                    } catch { #expect(Bool(false), "ready channel unexpectedly closed") }
+
                     loop: while true {
                         do {
                             guard let value = try await iterator.next() else {
@@ -437,6 +442,16 @@
             }
 
             let idsToCancel = Set(stride(from: 0, to: subscriberCount, by: 3))
+            let controlSubscriberID = 0
+
+            for _ in 0..<subscriberCount {
+                _ = try await ready.receiver.receive()
+            }
+            ready.close()
+
+            let controlTask = subscriberTasks[controlSubscriberID].task
+            controlTask.cancel()
+            await controlTask.value
 
             await withTaskGroup(of: Void.self) { group in
 
@@ -450,7 +465,9 @@
 
                 group.addTask { [subscriberTasks] in
                     for _ in 0..<10 { await Task.yield() }
-                    for entry in subscriberTasks where idsToCancel.contains(entry.id) {
+                    for entry in subscriberTasks where
+                        idsToCancel.contains(entry.id) && entry.id != controlSubscriberID
+                    {
                         entry.task.cancel()
                     }
                 }
@@ -465,14 +482,15 @@
             results.close()
 
             var completedSubscribers = 0
+            var cancelledSubscribers = 0
 
             while let result = try await results.receiver.receive() {
                 completedSubscribers += 1
 
-                (1..<result.elements.count).forEach { i in
+                for (previous, next) in zip(result.elements, result.elements.dropFirst()) {
                     #expect(
-                        result.elements[i] > result.elements[i - 1],
-                        "Subscriber \(result.id): Out of order at index \(i): \(result.elements[i - 1]) -> \(result.elements[i])"
+                        next > previous,
+                        "Subscriber \(result.id): Out of order: \(previous) -> \(next)"
                     )
                 }
 
@@ -487,12 +505,31 @@
                         "Subscriber \(result.id): Value \(value) out of range [0, \(elementCount))"
                     )
                 }
+
+                if result.terminatedViaCancellation {
+                    cancelledSubscribers += 1
+                    #expect(
+                        idsToCancel.contains(result.id),
+                        "Subscriber \(result.id): Unexpected cancellation"
+                    )
+                } else {
+                    #expect(
+                        result.elements == Array(0..<elementCount),
+                        "Subscriber \(result.id): A non-cancelled subscriber must receive every element"
+                    )
+                }
+
+                if result.id == controlSubscriberID {
+                    #expect(result.terminatedViaCancellation)
+                    #expect(result.elements.isEmpty)
+                }
             }
 
             #expect(
                 completedSubscribers == subscriberCount,
                 "Expected \(subscriberCount) subscribers to terminate, got \(completedSubscribers)"
             )
+            #expect(cancelledSubscribers > 0, "Expected at least one subscriber cancellation")
         }
 
         @Test
