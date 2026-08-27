@@ -1,4 +1,4 @@
-import Async_Test_Support
+import Async
 import Testing
 
 #if canImport(Darwin)
