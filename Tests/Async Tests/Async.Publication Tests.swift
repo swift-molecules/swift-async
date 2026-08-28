@@ -1,4 +1,4 @@
-import Async
+import Async_Test_Support
 import Testing
 
 enum Publication {
@@ -174,32 +174,32 @@ extension Publication.Test.Performance {
         let iterations = 1_000
         let range = 0..<iterations
 
-        let observed = await withTaskGroup(of: [Int].self) { group in
+        let ends = Async.Channel<Int>.Unbounded().take().ends()
+
+        await withTaskGroup(of: Void.self) { group in
 
             group.addTask {
                 for i in range {
                     publication.publish(i)
                     await Task.yield()
                 }
-                return []
             }
 
-            group.addTask {
-                var collected: [Int] = []
+            group.addTask { [sender = ends.sender] in
                 for _ in range {
                     if let value = publication.take() {
-                        collected.append(value)
+                        try? sender.send(value)
                     }
                     await Task.yield()
                 }
-                return collected
             }
+        }
 
-            var observed: [Int] = []
-            for await collected in group {
-                observed.append(contentsOf: collected)
-            }
-            return observed
+        ends.close()
+
+        var observed: [Int] = []
+        while let value = try? await ends.receiver.receive() {
+            observed.append(value)
         }
 
         #expect(!observed.isEmpty, "No values observed during interleaving")
@@ -218,7 +218,9 @@ extension Publication.Test.Performance {
         let iterationsPerActor = 100
         let totalRange = 0..<(publisherCount * iterationsPerActor)
 
-        let observed = await withTaskGroup(of: [Int].self) { group in
+        let ends = Async.Channel<Int>.Unbounded().take().ends()
+
+        await withTaskGroup(of: Void.self) { group in
 
             for p in 0..<publisherCount {
                 group.addTask {
@@ -227,28 +229,26 @@ extension Publication.Test.Performance {
                         publication.publish(base + j)
                         await Task.yield()
                     }
-                    return []
                 }
             }
 
             for _ in 0..<takerCount {
-                group.addTask {
-                    var collected: [Int] = []
+                group.addTask { [sender = ends.sender] in
                     for _ in 0..<iterationsPerActor {
                         if let value = publication.take() {
-                            collected.append(value)
+                            try? sender.send(value)
                         }
                         await Task.yield()
                     }
-                    return collected
                 }
             }
+        }
 
-            var observed: [Int] = []
-            for await collected in group {
-                observed.append(contentsOf: collected)
-            }
-            return observed
+        ends.close()
+
+        var observed: [Int] = []
+        while let value = try? await ends.receiver.receive() {
+            observed.append(value)
         }
 
         for value in observed {

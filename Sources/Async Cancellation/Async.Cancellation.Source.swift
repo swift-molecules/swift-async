@@ -1,3 +1,4 @@
+internal import Async_Mutex
 
 extension Async.Cancellation {
 

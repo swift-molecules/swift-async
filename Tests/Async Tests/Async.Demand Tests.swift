@@ -1,4 +1,4 @@
-import Async
+import Async_Test_Support
 import Testing
 
 enum Demand {
