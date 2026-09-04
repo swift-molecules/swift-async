@@ -4,7 +4,7 @@ internal import Async_Promise
 internal import Async_Waiter
 internal import Buffer_Ring_Primitive
 internal import Memory_Allocator_Primitive
-internal import Memory_Heap
+internal import Memory
 internal import Queue_Primitive
 internal import Queue
 internal import Storage_Contiguous

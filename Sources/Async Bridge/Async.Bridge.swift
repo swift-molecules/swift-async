@@ -6,7 +6,7 @@
     import Column
     import Buffer_Ring_Primitive
     import Storage_Contiguous
-    import Memory_Heap
+    import Memory
     import Memory_Allocator_Primitive
     import Buffer_Primitive
 

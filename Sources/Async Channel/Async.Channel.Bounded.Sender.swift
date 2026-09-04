@@ -7,7 +7,7 @@
     public import Column
     public import Buffer_Ring_Primitive
     public import Storage_Contiguous
-    import Memory_Heap
+    import Memory
     import Memory_Allocator_Primitive
     import Buffer_Primitive
 

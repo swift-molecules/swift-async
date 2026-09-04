@@ -3,7 +3,7 @@ public import Async_Primitive
 public import Async_Waiter
 internal import Buffer_Ring_Primitive
 internal import Memory_Allocator_Primitive
-internal import Memory_Heap
+internal import Memory
 public import Queue_Primitive
 internal import Storage_Contiguous
 
